@@ -1,0 +1,154 @@
+Metadata-Version: 2.4
+Name: open-r1
+Version: 0.1.0.dev0
+Summary: Open R1
+Home-page: https://github.com/huggingface/open-r1
+Author: The Hugging Face team (past and future)
+Author-email: lewis@huggingface.co
+License: Apache
+Keywords: llm inference-time compute reasoning
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.10.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: accelerate==1.4.0
+Requires-Dist: bitsandbytes>=0.43.0
+Requires-Dist: einops>=0.8.0
+Requires-Dist: datasets>=3.2.0
+Requires-Dist: deepspeed==0.15.4
+Requires-Dist: hf_transfer>=0.1.4
+Requires-Dist: huggingface-hub[cli]<1.0,>=0.19.2
+Requires-Dist: langdetect
+Requires-Dist: latex2sympy2_extended>=1.0.6
+Requires-Dist: math-verify==0.5.2
+Requires-Dist: liger_kernel==0.5.3
+Requires-Dist: packaging>=23.0
+Requires-Dist: safetensors>=0.3.3
+Requires-Dist: sentencepiece>=0.1.99
+Requires-Dist: transformers==4.49.0
+Requires-Dist: trl@ git+https://github.com/huggingface/trl.git@69ad852e5654a77f1695eb4c608906fe0c7e8624
+Requires-Dist: wandb>=0.19.1
+Provides-Extra: tests
+Requires-Dist: pytest; extra == "tests"
+Requires-Dist: parameterized>=0.9.0; extra == "tests"
+Requires-Dist: math-verify==0.5.2; extra == "tests"
+Provides-Extra: torch
+Requires-Dist: torch==2.5.1; extra == "torch"
+Provides-Extra: quality
+Requires-Dist: ruff>=0.9.0; extra == "quality"
+Requires-Dist: isort>=5.12.0; extra == "quality"
+Requires-Dist: flake8>=6.0.0; extra == "quality"
+Provides-Extra: code
+Requires-Dist: e2b-code-interpreter>=1.0.5; extra == "code"
+Requires-Dist: python-dotenv; extra == "code"
+Provides-Extra: eval
+Requires-Dist: lighteval@ git+https://github.com/huggingface/lighteval.git@ed084813e0bd12d82a06d9f913291fdbee774905 ; extra == "eval"
+Requires-Dist: math-verify==0.5.2; extra == "eval"
+Provides-Extra: dev
+Requires-Dist: ruff>=0.9.0; extra == "dev"
+Requires-Dist: isort>=5.12.0; extra == "dev"
+Requires-Dist: flake8>=6.0.0; extra == "dev"
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: parameterized>=0.9.0; extra == "dev"
+Requires-Dist: math-verify==0.5.2; extra == "dev"
+Requires-Dist: lighteval@ git+https://github.com/huggingface/lighteval.git@ed084813e0bd12d82a06d9f913291fdbee774905 ; extra == "dev"
+Requires-Dist: math-verify==0.5.2; extra == "dev"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license
+Dynamic: license-file
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# DRA-GRPO 
+Official code for the paper: DRA-GRPO: Exploring Diversity-Aware Reward Adjustment for R1-Zero-Like Training of Large Language Models [![paper](https://img.shields.io/badge/arXiv-Paper-brightgreen)](https://arxiv.org/abs/2505.09655)
+
+Paper link (preprint): https://arxiv.org/abs/2505.09655
+
+
+
+> **Abstract.** Recent advances in reinforcement learning for language model post-training, such as Group Relative Policy Optimization (GRPO), have shown promise in low-resource settings. However, GRPO typically relies on solution-level and scalar reward signals that fail to capture the semantic diversity among sampled completions. This leads to what we identify as a diversity-quality inconsistency, where distinct reasoning paths may receive indistinguishable rewards. To address this limitation, we propose $\textit{Diversity-aware Reward Adjustment} (DRA)$, a method that explicitly incorporates semantic diversity into the reward computation. DRA uses Submodular Mutual Information (SMI) to downweight redundant completions and amplify rewards for diverse ones. This encourages better exploration during learning, while maintaining stable exploitation of high-quality samples. Our method integrates seamlessly with both GRPO and its variant DR.~GRPO, resulting in $\textit{DRA-GRPO}$ and $\textit{DGA-DR.~GRPO}$. We evaluate our method on five mathematical reasoning benchmarks and find that it outperforms recent strong baselines. It achieves state-of-the-art performance with an average accuracy of 58.2\%, using only 7,000 fine-tuning samples and a total training cost of approximately $55.
+
+## Installation
+
+Clone the code. We are using the following modules.
+
+```
+module load anaconda3/2023.09-0 
+module load git-lfs/3.3.0 
+module load cuda/11.8.0 
+
+```
+
+Please follow the instructions of [Open-RS](https://github.com/knoveleng/open-rs) to install the environment.
+Log in to Hugging Face and Weights & Biases:
+```
+huggingface-cli login
+wandb login
+```
+
+```
+source activate openr3
+```
+
+**You can then remove ```trl``` package from the environment, because we customized it.**
+
+
+
+## Training
+
+### DRA-GRPO
+```
+ACCELERATE_LOG_LEVEL=info accelerate launch \
+--main_process_port 11188 \
+  --config_file recipes/accelerate_configs/zero2.yaml \
+  --num_processes=3 \
+  src/open_r1/grpo.py \
+  --config recipes/dra_grpo.yaml 
+```
+
+
+### DRA-DR. GRPO
+```
+ACCELERATE_LOG_LEVEL=info accelerate launch \
+--main_process_port 18007 \
+  --config_file recipes/accelerate_configs/zero2.yaml \
+  --num_processes=3 \
+  src/open_r1/drgrpo.py \
+  --config recipes/dra_dr_grpo.yaml
+```
+
+All weights will update to Huggingface.
+
+## Inference via lighteval (Test multiple steps)
+We have an evaluation template 
+
+```
+base evaL_all.sh
+```
+
+## Checkpoints
+
+We will release it soon!
+
+##
+
+Our code is built based on [Open-rs](https://github.com/knoveleng/open-rs). Thanks!
+
+
+
