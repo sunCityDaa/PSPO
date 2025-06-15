@@ -64,6 +64,9 @@ from sentence_transformers import SentenceTransformer
 
 from transformers import AutoModel
 import torch.nn.functional as F
+import hashlib
+
+
 
 if is_peft_available():
     from peft import PeftConfig, get_peft_model
@@ -278,6 +281,8 @@ def nanmax(tensor: torch.Tensor) -> torch.Tensor:
         return torch.tensor(float("nan"), dtype=tensor.dtype, device=tensor.device)
     return torch.max(tensor[~torch.isnan(tensor)])
 
+def get_prompt_hash(prompt_text: str) -> str:
+    return hashlib.sha256(prompt_text.encode('utf-8')).hexdigest()
 
 class ERGRPOTrainer(Trainer):
     """
@@ -1256,27 +1261,44 @@ class ERGRPOTrainer(Trainer):
         mean_grouped_rewards = rewards.view(-1, self.num_generations).mean(dim=1)
         std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
         is_std_zero = torch.isclose(std_grouped_rewards, torch.zeros_like(std_grouped_rewards))
-        if self.reward_stats.get(prompts[0]) is None:
-            # Initialize the reward stats for the first prompt
-            self.reward_stats[prompts[0]] = [mean_grouped_rewards.clone(), std_grouped_rewards.clone()]
-        else:
-            last_mean_grouped_rewards = self.reward_stats[prompts[0]][0]
-            last_std_grouped_rewards = self.reward_stats[prompts[0]][1]
 
-            mean_grouped_rewards = self.reward_alpha * mean_grouped_rewards + (1 - self.reward_alpha) * last_mean_grouped_rewards
-            std_grouped_rewards = self.reward_alpha * std_grouped_rewards + (1 - self.reward_alpha) * last_std_grouped_rewards
+        # global last_mean_grouped_rewards, last_std_grouped_rewards
+        # prompt_key = prompts[0][1]['content']
+        # prompt_key = get_prompt_hash(prompt_key)
+        # if self.reward_stats.get(prompt_key) is None:
+        #     # Initialize the reward stats for the first prompt
+        #     self.reward_stats[prompt_key] = [mean_grouped_rewards.clone(), std_grouped_rewards.clone()]
+        #     last_mean_grouped_rewards = mean_grouped_rewards.clone()
+        #     last_std_grouped_rewards = std_grouped_rewards.clone()
+        # else:
+        #     last_mean_grouped_rewards = self.reward_stats[prompt_key][0]
+        #     last_std_grouped_rewards = self.reward_stats[prompt_key][1]
 
-            # 保存上一次调用此prompt的奖励和方差，和这一次的均值方差进行加权
-            self.reward_stats[prompts[0]][0] = mean_grouped_rewards
-            self.reward_stats[prompts[0]][1] = std_grouped_rewards
+        #     mean_grouped_rewards = self.reward_alpha * mean_grouped_rewards + (1 - self.reward_alpha) * last_mean_grouped_rewards
+        #     std_grouped_rewards = self.reward_alpha * std_grouped_rewards + (1 - self.reward_alpha) * last_std_grouped_rewards
+
+        #     # 保存上一次调用此prompt的奖励和方差，和这一次的均值方差进行加权
+        #     self.reward_stats[prompt_key][0] = mean_grouped_rewards
+        #     self.reward_stats[prompt_key][1] = std_grouped_rewards
 
 
         # Normalize the rewards to compute the advantages
         mean_grouped_rewards = mean_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
         std_grouped_rewards = std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
         advantages = rewards - mean_grouped_rewards
+
         if self.scale_rewards:
             advantages = advantages / (std_grouped_rewards + 1e-4)
+
+        # last_std_grouped_rewards = last_std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
+
+        # correction = (last_std_grouped_rewards - std_grouped_rewards) / (last_std_grouped_rewards + 1e-4)
+        # advantages = advantages - correction
+
+        
+
+
+        advantages = advantages + std_grouped_rewards
 
         # Slice to keep only the local part of the data
         process_slice = slice(
@@ -1285,11 +1307,7 @@ class ERGRPOTrainer(Trainer):
         )
         all_process_advantages = advantages.clone()  # keep the aggregated advantages for logging
         
-        if self.reward_stats.get(prompts[0]) is None:
-            advantages = advantages[process_slice] + std_grouped_rewards
-        else:
-            advantages = advantages[process_slice] - (last_std_grouped_rewards - std_grouped_rewards)/(last_std_grouped_rewards + 1e-4) # 修改，这个有个bug，如果初始的时候std为0，后面就会一直为0，所以要修改
-
+        
         # Log the metrics
         if mode == "train":
             self.state.num_input_tokens_seen += self.accelerator.gather(attention_mask.sum()).sum().item()
@@ -1425,8 +1443,7 @@ class ERGRPOTrainer(Trainer):
         logits = torch.exp(per_token_logps)
         prob_dist = torch.nn.functional.softmax(logits, dim=-1)
         entropy = torch.logsumexp(logits, dim=-1) - torch.sum(prob_dist * logits, dim=-1)
-        self._metrics[mode]["policy_entropy_avg"].append(self.accelerator.gather(entropy.mean()).nanmean().item())
-
+        
         
         # Compute the loss
         advantages = inputs["advantages"]
@@ -1461,6 +1478,8 @@ class ERGRPOTrainer(Trainer):
 
         # Log the metrics
         mode = "train" if self.model.training else "eval"
+        self._metrics[mode]["policy_entropy_avg"].append(self.accelerator.gather(entropy.mean()).nanmean().item())
+
 
         if self.beta != 0.0:
             mean_kl = (per_token_kl * completion_mask).sum() / completion_mask.sum()

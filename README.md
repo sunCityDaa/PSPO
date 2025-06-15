@@ -38,9 +38,8 @@ source activate openr3
 ### ER-GRPO
 ```
 ACCELERATE_LOG_LEVEL=info accelerate launch \
---main_process_port 11188 \
-  --config_file recipes/accelerate_configs/zero2.yaml \
-  --num_processes=3 \
+  --config_file src/open_r1/trl/accelerate_configs/zero2.yaml \
+  --num_processes=2 \
   src/open_r1/grpo.py \
   --config recipes/dra_grpo.yaml 
                                           
@@ -50,10 +49,9 @@ ACCELERATE_LOG_LEVEL=info accelerate launch \
 ### DRA-DR. GRPO
 ```
 ACCELERATE_LOG_LEVEL=info accelerate launch \
---main_process_port 18007 \
-  ---config_file src/open_r1/trl/accelerate_configs/zero2.yaml \
-  --num_processes=3 \
-  src/open_r1/drgrpo.py \
+  --config_file src/open_r1/trl/accelerate_configs/zero2.yaml \
+  --num_processes=2 \
+  src/open_r1/ergrpo.py \
   --config recipes/dra_er_grpo.yaml
 ```
 

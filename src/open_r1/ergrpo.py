@@ -39,7 +39,7 @@ from src.open_r1.rewards import (
 from src.open_r1.utils import get_tokenizer
 from src.open_r1.utils.callbacks import get_callbacks
 from src.open_r1.utils.wandb_logging import init_wandb_training
-from src.open_r1.trl import ERGRPOTrainer,GRPOTrainer, ModelConfig, ScriptArguments, TrlParser, get_peft_config
+from src.open_r1.trl import ERGRPOTrainer, GRPOTrainer, ModelConfig, ScriptArguments, TrlParser, get_peft_config
 
 
 from sentence_transformers import SentenceTransformer
@@ -247,14 +247,14 @@ def main(script_args, training_args, model_args):
     ##################################
     # Save model and create model card
     ##################################
-    logger.info("*** Save model ***")
-    trainer.save_model(training_args.output_dir)
-    logger.info(f"Model saved to {training_args.output_dir}")
+    # logger.info("*** Save model ***")
+    # trainer.save_model(training_args.output_dir)
+    # logger.info(f"Model saved to {training_args.output_dir}")
 
     # Save everything else on main process
     kwargs = {
         "dataset_name": script_args.dataset_name,
-        "tags": ["open-r1"],
+        "tags": ["ERGRPO"],
     }
     if trainer.accelerator.is_main_process:
         trainer.create_model_card(**kwargs)
