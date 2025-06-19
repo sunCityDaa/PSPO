@@ -1,6 +1,6 @@
 /data/*
 /wandb/*
-/logs/*
+
 # ./src/open_r1/_pycache_/*
 # ./src/open_r1/trl/_pycache_/*
 # ./src/open_r1/trl_old/_pycache_/*

@@ -402,14 +402,14 @@ class ERGRPOTrainer(Trainer):
         ## adding feat extractor
         # self.bge = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
         # self.bge.model.to('cuda')
-        self.extractor_name=args.extractor_name
-        # self.sentence_extractor = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-small-en', trust_remote_code=True).cuda()
-        if args.extractor_name == 'jina':
-            self.sentence_extractor = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-small-en', trust_remote_code=True).cuda()
-        elif args.extractor_name == 'nomic':
-            self.sentence_extractor = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True).cuda()
-        else:
-            raise NotImplementedError("Embedding model is not implemented.")
+        # self.extractor_name=args.extractor_name
+        # # self.sentence_extractor = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-small-en', trust_remote_code=True).cuda()
+        # if args.extractor_name == 'jina':
+        #     self.sentence_extractor = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-small-en', trust_remote_code=True).cuda()
+        # elif args.extractor_name == 'nomic':
+        #     self.sentence_extractor = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True).cuda()
+        # else:
+        #     raise NotImplementedError("Embedding model is not implemented.")
             
         # Models
         # Trained model
@@ -501,7 +501,7 @@ class ERGRPOTrainer(Trainer):
                 reward_func.config.pad_token_id = reward_processing_class.pad_token_id
                 reward_processing_classes[i] = reward_processing_class
         self.reward_processing_classes = reward_processing_classes
-        self.SMI_reweighting = args.SMI_reweighting
+        # self.SMI_reweighting = args.SMI_reweighting
         # Data collator
         def data_collator(features):  # No data collation is needed in GRPO
             return features
@@ -1223,38 +1223,38 @@ class ERGRPOTrainer(Trainer):
 
         ######### SMI reweighting
    
-        if self.SMI_reweighting:
-            if isinstance(completions[0], list):  # conversational-style completions
-                completions_flat = [
-                    " ".join([turn.get("content", "") for turn in comp if isinstance(turn, dict)])
-                    for comp in completions
-                ]
-            elif isinstance(completions[0], dict):  # just a list of messages
-                completions_flat = [comp.get("content", "") for comp in completions]
-            else:  # assume plain strings (just in case)
-                completions_flat = [str(c) for c in completions]
+        # if self.SMI_reweighting:
+        #     if isinstance(completions[0], list):  # conversational-style completions
+        #         completions_flat = [
+        #             " ".join([turn.get("content", "") for turn in comp if isinstance(turn, dict)])
+        #             for comp in completions
+        #         ]
+        #     elif isinstance(completions[0], dict):  # just a list of messages
+        #         completions_flat = [comp.get("content", "") for comp in completions]
+        #     else:  # assume plain strings (just in case)
+        #         completions_flat = [str(c) for c in completions]
 
-            if  self.extractor_name=='nomic':
-                embeddings = self.sentence_extractor.encode(completions_flat,max_tokens_per_text=3584,device=device)
-            elif self.extractor_name== 'jina':
-                embeddings = self.sentence_extractor.encode(completions_flat,max_length=3584,device=device)
-            else:
-                raise NotImplementedError("Embedding model is not implemented.")
+        #     if  self.extractor_name=='nomic':
+        #         embeddings = self.sentence_extractor.encode(completions_flat,max_tokens_per_text=3584,device=device)
+        #     elif self.extractor_name== 'jina':
+        #         embeddings = self.sentence_extractor.encode(completions_flat,max_length=3584,device=device)
+        #     else:
+        #         raise NotImplementedError("Embedding model is not implemented.")
                 
-            embeddings = torch.from_numpy(embeddings).to(device) 
-            embeddings = F.normalize(embeddings, p=2, dim=1)
+        #     embeddings = torch.from_numpy(embeddings).to(device) 
+        #     embeddings = F.normalize(embeddings, p=2, dim=1)
 
-            # print("embeddings:",embeddings.shape)
+        #     # print("embeddings:",embeddings.shape)
 
-            similarity_matrix = embeddings @ embeddings.T
-            similarity_sums = similarity_matrix.sum(dim=1)
-            diversity_weights = 1.0 / (similarity_sums + 1e-6)
+        #     similarity_matrix = embeddings @ embeddings.T
+        #     similarity_sums = similarity_matrix.sum(dim=1)
+        #     diversity_weights = 1.0 / (similarity_sums + 1e-6)
 
 
 
-            diversity_weights = gather(diversity_weights) 
+        #     diversity_weights = gather(diversity_weights) 
 
-            rewards = rewards * diversity_weights
+        #     rewards = rewards * diversity_weights
         
     
         # Compute grouped-wise rewards
@@ -1262,24 +1262,24 @@ class ERGRPOTrainer(Trainer):
         std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
         is_std_zero = torch.isclose(std_grouped_rewards, torch.zeros_like(std_grouped_rewards))
 
-        # global last_mean_grouped_rewards, last_std_grouped_rewards
-        # prompt_key = prompts[0][1]['content']
-        # prompt_key = get_prompt_hash(prompt_key)
-        # if self.reward_stats.get(prompt_key) is None:
-        #     # Initialize the reward stats for the first prompt
-        #     self.reward_stats[prompt_key] = [mean_grouped_rewards.clone(), std_grouped_rewards.clone()]
-        #     last_mean_grouped_rewards = mean_grouped_rewards.clone()
-        #     last_std_grouped_rewards = std_grouped_rewards.clone()
-        # else:
-        #     last_mean_grouped_rewards = self.reward_stats[prompt_key][0]
-        #     last_std_grouped_rewards = self.reward_stats[prompt_key][1]
+        global last_mean_grouped_rewards, last_std_grouped_rewards
+        prompt_key = prompts[0][1]['content']
+        prompt_key = get_prompt_hash(prompt_key)
+        if self.reward_stats.get(prompt_key) is None:
+            # Initialize the reward stats for the first prompt
+            self.reward_stats[prompt_key] = [mean_grouped_rewards.clone(), std_grouped_rewards.clone()]
+            last_mean_grouped_rewards = mean_grouped_rewards.clone()
+            last_std_grouped_rewards = std_grouped_rewards.clone()
+        else:
+            last_mean_grouped_rewards = self.reward_stats[prompt_key][0]
+            last_std_grouped_rewards = self.reward_stats[prompt_key][1]
 
-        #     mean_grouped_rewards = self.reward_alpha * mean_grouped_rewards + (1 - self.reward_alpha) * last_mean_grouped_rewards
-        #     std_grouped_rewards = self.reward_alpha * std_grouped_rewards + (1 - self.reward_alpha) * last_std_grouped_rewards
+            mean_grouped_rewards = self.reward_alpha * mean_grouped_rewards + (1 - self.reward_alpha) * last_mean_grouped_rewards
+            std_grouped_rewards = self.reward_alpha * std_grouped_rewards + (1 - self.reward_alpha) * last_std_grouped_rewards
 
-        #     # 保存上一次调用此prompt的奖励和方差，和这一次的均值方差进行加权
-        #     self.reward_stats[prompt_key][0] = mean_grouped_rewards
-        #     self.reward_stats[prompt_key][1] = std_grouped_rewards
+            # 保存上一次调用此prompt的奖励和方差，和这一次的均值方差进行加权
+            self.reward_stats[prompt_key][0] = mean_grouped_rewards
+            self.reward_stats[prompt_key][1] = std_grouped_rewards
 
 
         # Normalize the rewards to compute the advantages
@@ -1298,7 +1298,7 @@ class ERGRPOTrainer(Trainer):
         
 
 
-        advantages = advantages + std_grouped_rewards
+        # advantages = advantages + std_grouped_rewards
 
         # Slice to keep only the local part of the data
         process_slice = slice(
@@ -1307,7 +1307,7 @@ class ERGRPOTrainer(Trainer):
         )
         all_process_advantages = advantages.clone()  # keep the aggregated advantages for logging
         
-        
+        advantages = advantages[process_slice]
         # Log the metrics
         if mode == "train":
             self.state.num_input_tokens_seen += self.accelerator.gather(attention_mask.sum()).sum().item()
@@ -1479,7 +1479,6 @@ class ERGRPOTrainer(Trainer):
         # Log the metrics
         mode = "train" if self.model.training else "eval"
         self._metrics[mode]["policy_entropy_avg"].append(self.accelerator.gather(entropy.mean()).nanmean().item())
-
 
         if self.beta != 0.0:
             mean_kl = (per_token_kl * completion_mask).sum() / completion_mask.sum()

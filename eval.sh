@@ -1,15 +1,27 @@
 #!/bin/sh
 # Base model configuration
 #  如果用两个卡 需要export VLLM_WORKER_MULTIPROC_METHOD=spawn
-MODEL="lalalaDa/GRPO"
-BASE_MODEL_ARGS="model_name=$MODEL,\
-dtype=bfloat16,\
+
+
+# 从huggingface上下模型的配置
+# MODEL="lalalaDa/GRPO"
+# BASE_MODEL_ARGS="model_name=$MODEL,\
+# dtype=bfloat16,\
+# max_model_length=4096,\
+# gpu_memory_utilization=0.8,\
+# tensor_parallel_size=2,\
+# max_num_batched_tokens=4096,\
+# generation_parameters={max_new_tokens:3584,temperature:0.7,top_p:1.0}"
+
+
+
+
+BASE_MODEL_ARGS="dtype=bfloat16,\
 max_model_length=4096,\
 gpu_memory_utilization=0.8,\
 tensor_parallel_size=2,\
 max_num_batched_tokens=4096,\
 generation_parameters={max_new_tokens:3584,temperature:0.7,top_p:1.0}"
-
 
 
 # Define evaluation tasks
@@ -42,16 +54,21 @@ get_revision() {
     # DRGRPO
     elif [ "$exp" = "2" ]; then
         case $step in
-            50)  echo "3fa00db18c41611c1ae70d1e6b5f668bb2d8592e" ;;
-            100) echo "c609c349f4b2abc1ec14dcb496715559ad9dede6" ;;
-            150) echo "1b8635e91636c9029b6d55b26829e2f749003392" ;;
-            200) echo "2d942ed28c4b0a1b3373376590a90248347b5d57" ;;
-            250) echo "9ae3908996d6495cd8725e370ddb92af24559dc1" ;;
-            300) echo "dfa856ecd8941aa6bb22712acd33faae2a388459" ;;
-            350) echo "02a7a65eed7887ba267912c136405ce9923e9e05" ;;
-            400) echo "e43e96f04acdf7e1df3c1f40e4feba569f86ece8" ;;
-            450) echo "95fe21a893b3bc9a40332ee9f17badee09a835a1" ;;
-            500) echo "ed5b5f719716abf240ef0f7e13d31f72c28df32c" ;;
+            # 50)  echo "3fa00db18c41611c1ae70d1e6b5f668bb2d8592e" ;;
+            # 100) echo "c609c349f4b2abc1ec14dcb496715559ad9dede6" ;;
+            # 150) echo "1b8635e91636c9029b6d55b26829e2f749003392" ;;
+            # 200) echo "2d942ed28c4b0a1b3373376590a90248347b5d57" ;;
+            # 250) echo "9ae3908996d6495cd8725e370ddb92af24559dc1" ;;
+            # 300) echo "dfa856ecd8941aa6bb22712acd33faae2a388459" ;;
+            # 350) echo "02a7a65eed7887ba267912c136405ce9923e9e05" ;;
+            # 400) echo "e43e96f04acdf7e1df3c1f40e4feba569f86ece8" ;;
+            # 450) echo "95fe21a893b3bc9a40332ee9f17badee09a835a1" ;;
+            # 500) echo "ed5b5f719716abf240ef0f7e13d31f72c28df32c" ;;
+            300) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-300" ;;
+            350) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-350" ;;
+            400) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-400" ;;
+            450) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-450" ;;
+            500) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-500" ;;
             *) echo "unknown" ;;
         esac
     # Experiment 3 revisions
@@ -70,6 +87,21 @@ get_revision() {
             500) echo "14f6576f0b3340a127f87c28028486eb686a5f75" ;;
             *) echo "unknown" ;;
         esac
+    # ERGRPO
+    elif [ "$exp" = "4" ]; then
+        case $step in
+            # 50)  echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-50" ;;
+            # 100) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-100" ;;
+            150) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-150" ;;
+            200) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-200" ;;
+            250) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-250" ;;
+            300) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-300" ;;
+            350) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-350" ;;
+            400) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-400" ;;
+            450) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-450" ;;
+            500) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-500" ;;
+            *) echo "unknown" ;;
+        esac
     else
         echo "unknown"
     fi
@@ -81,8 +113,11 @@ get_steps() {
     
     case $exp in
         1) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        2) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        # 2) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        2) echo "300 350 400 450 500" ;;
         3) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        # 4) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        4) echo "150 200 250 300 350 400 450 500" ;;
         *) echo "" ;;
     esac
 }
@@ -101,7 +136,12 @@ run_evaluation() {
     fi
     
     # Set model args with the specific revision
-    model_args="$BASE_MODEL_ARGS,revision=$revision"
+    # 从huggingface上下模型的配置
+    # model_args="$BASE_MODEL_ARGS,revision=$revision"
+
+    # 从本地加载模型
+    model_args="model_name=$revision,$BASE_MODEL_ARGS"
+
     
     echo "----------------------------------------"
     echo "Running evaluations for experiment $experiment, step $step"
@@ -148,7 +188,7 @@ run_experiment() {
 list_configurations() {
     echo "Available Experiments:"
     
-    for exp_num in 1 2 3; do
+    for exp_num in 1 2 3 4; do
         steps=$(get_steps "$exp_num")
         echo "  Experiment $exp_num: Steps = $steps"
         
@@ -180,7 +220,7 @@ main() {
     fi
     
     for exp_num in "$@"; do
-        if [ "$exp_num" = "1" ] || [ "$exp_num" = "2" ] || [ "$exp_num" = "3" ]; then
+        if [ "$exp_num" = "1" ] || [ "$exp_num" = "2" ] || [ "$exp_num" = "3" ] || [ "$exp_num" = "4" ]; then
             run_experiment "$exp_num"
         else
             echo "Error: Experiment $exp_num not defined"

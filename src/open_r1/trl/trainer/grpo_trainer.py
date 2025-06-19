@@ -1228,8 +1228,7 @@ class GRPOTrainer(Trainer):
         )
         all_process_advantages = advantages.clone()  # keep the aggregated advantages for logging
         
-        
-        advantages = advantages[process_slice] 
+        advantages = advantages[process_slice]
         # Log the metrics
         if mode == "train":
             self.state.num_input_tokens_seen += self.accelerator.gather(attention_mask.sum()).sum().item()
@@ -1400,7 +1399,6 @@ class GRPOTrainer(Trainer):
 
         # Log the metrics
         mode = "train" if self.model.training else "eval"
-
         self._metrics[mode]["policy_entropy_avg"].append(self.accelerator.gather(entropy.mean()).nanmean().item())
 
         if self.beta != 0.0:

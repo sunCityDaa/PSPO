@@ -45,7 +45,6 @@ ACCELERATE_LOG_LEVEL=info accelerate launch \
                                           
 ```
 
-
 ### DRA-DR. GRPO
 ```
 ACCELERATE_LOG_LEVEL=info accelerate launch \
