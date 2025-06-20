@@ -87,7 +87,7 @@ get_revision() {
             500) echo "14f6576f0b3340a127f87c28028486eb686a5f75" ;;
             *) echo "unknown" ;;
         esac
-    # ERGRPO
+    # ERGRPO-STD
     elif [ "$exp" = "4" ]; then
         case $step in
             # 50)  echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-50" ;;
@@ -102,6 +102,21 @@ get_revision() {
             500) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-500" ;;
             *) echo "unknown" ;;
         esac
+    # ERGRPO
+    elif [ "$exp" = "5" ]; then
+        case $step in
+            50)  echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-50" ;;
+            100) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-100" ;;
+            150) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-150" ;;
+            200) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-200" ;;
+            250) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-250" ;;
+            300) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-300" ;;
+            350) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-350" ;;
+            400) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-400" ;;
+            450) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-450" ;;
+            500) echo "/data/ER-GRPO/data/ER-GRPO/checkpoint-500" ;;
+            *) echo "unknown" ;;
+        esac
     else
         echo "unknown"
     fi
@@ -113,11 +128,12 @@ get_steps() {
     
     case $exp in
         1) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        # 2) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        2) echo "300 350 400 450 500" ;;
+        2) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        # 2) echo "300 350 400 450 500" ;;
         3) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        # 4) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        4) echo "150 200 250 300 350 400 450 500" ;;
+        4) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        # 4) echo "150 200 250 300 350 400 450 500" ;;
+        5) echo "50 100 150 200 250 300 350 400 450 500" ;;
         *) echo "" ;;
     esac
 }
@@ -188,7 +204,7 @@ run_experiment() {
 list_configurations() {
     echo "Available Experiments:"
     
-    for exp_num in 1 2 3 4; do
+    for exp_num in 1 2 3 4 5; do
         steps=$(get_steps "$exp_num")
         echo "  Experiment $exp_num: Steps = $steps"
         
@@ -220,7 +236,7 @@ main() {
     fi
     
     for exp_num in "$@"; do
-        if [ "$exp_num" = "1" ] || [ "$exp_num" = "2" ] || [ "$exp_num" = "3" ] || [ "$exp_num" = "4" ]; then
+        if [ "$exp_num" = "1" ] || [ "$exp_num" = "2" ] || [ "$exp_num" = "3" ] || [ "$exp_num" = "4" ] || [ "$exp_num" = "5" ]; then
             run_experiment "$exp_num"
         else
             echo "Error: Experiment $exp_num not defined"
