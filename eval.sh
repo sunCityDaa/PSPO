@@ -7,7 +7,7 @@
 # MODEL="lalalaDa/GRPO"
 # BASE_MODEL_ARGS="model_name=$MODEL,\
 # dtype=bfloat16,\
-# max_model_length=4096,\
+# max_model_length=32768,\
 # gpu_memory_utilization=0.8,\
 # tensor_parallel_size=2,\
 # max_num_batched_tokens=4096,\
@@ -17,11 +17,11 @@
 
 
 BASE_MODEL_ARGS="dtype=bfloat16,\
-max_model_length=4096,\
+max_model_length=32768,\
 gpu_memory_utilization=0.8,\
 tensor_parallel_size=2,\
-max_num_batched_tokens=4096,\
-generation_parameters={max_new_tokens:3584,temperature:0.7,top_p:1.0}"
+max_num_batched_tokens=32768,\
+generation_parameters={max_new_tokens:32768,temperature:0.6,top_p:0.95}"
 
 
 # Define evaluation tasks
@@ -147,6 +147,20 @@ get_revision() {
             500) echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-500" ;;
             *) echo "unknown" ;;
         esac
+    elif [ "$exp" = "8" ]; then
+        case $step in
+            50)  echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-50" ;;
+            100) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-100" ;;
+            150) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-150" ;;
+            200) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-200" ;;
+            250) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-250" ;;
+            300) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-300" ;;
+            350) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-350" ;;
+            400) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-400" ;;
+            450) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-450" ;;
+            500) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-500" ;;
+            *) echo "unknown" ;;
+        esac
     else
         echo "unknown"
     fi
@@ -166,6 +180,7 @@ get_steps() {
         5) echo "50 100 150 200 250 300 350 400 450 500" ;;
         6) echo "50 100 150 200 250 300 350 400 450 500" ;;
         7) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        8) echo "50 100 150 200 250 300 350 400 450 500" ;;
         *) echo "" ;;
     esac
 }
@@ -236,7 +251,7 @@ run_experiment() {
 list_configurations() {
     echo "Available Experiments:"
     
-    for exp_num in 1 2 3 4 5 6 7; do
+    for exp_num in 1 2 3 4 5 6 7 8; do
         steps=$(get_steps "$exp_num")
         echo "  Experiment $exp_num: Steps = $steps"
         
@@ -268,7 +283,7 @@ main() {
     fi
     
     for exp_num in "$@"; do
-        if [ "$exp_num" = "1" ] || [ "$exp_num" = "2" ] || [ "$exp_num" = "3" ] || [ "$exp_num" = "4" ] || [ "$exp_num" = "5" ] || [ "$exp_num" = "6" || [ "$exp_num" = "7" ]; then
+        if [ "$exp_num" = "1" ] || [ "$exp_num" = "2" ] || [ "$exp_num" = "3" ] || [ "$exp_num" = "4" ] || [ "$exp_num" = "5" ] || [ "$exp_num" = "6"] || [ "$exp_num" = "7" ] || [ "$exp_num" = "8" ]; then
             run_experiment "$exp_num"
         else
             echo "Error: Experiment $exp_num not defined"
