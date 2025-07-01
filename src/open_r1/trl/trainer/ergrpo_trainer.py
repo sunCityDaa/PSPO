@@ -18,7 +18,7 @@ import warnings
 from collections import defaultdict, deque
 from collections.abc import Sized
 from contextlib import nullcontext
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, Sized, List, Tuple, Dict
 
 import datasets
 import torch
@@ -67,6 +67,8 @@ import torch.nn.functional as F
 import hashlib
 
 
+import random
+
 
 if is_peft_available():
     from peft import PeftConfig, get_peft_model
@@ -86,64 +88,78 @@ if is_wandb_available():
 RewardFunc = Union[str, PreTrainedModel, Callable[[list, list], list[float]]]
 
 
-class RepeatSampler(Sampler):
-    """
-    Sampler that repeats the indices of a dataset in a structured manner.
 
-    Args:
-        data_source (`Sized`):
-            Dataset to sample from.
-        mini_repeat_count (`int`):
-            Number of times to repeat each index per batch.
-        batch_size (`int`, *optional*, defaults to `1`):
-            Number of unique indices per batch.
-        repeat_count (`int`, *optional*, defaults to `1`):
-            Number of times to repeat the full sampling process.
-        shuffle (`bool`, *optional*, defaults to `True`):
-            Whether to shuffle the dataset.
-        seed (`int` or `None`, *optional*, defaults to `None`):
-            Random seed for reproducibility (only affects this sampler).
 
-    Example:
-    ```python
-    >>> sampler = RepeatRandomSampler(["a", "b", "c", "d", "e", "f", "g"], mini_repeat_count=2, batch_size=3, repeat_count=4)
-    >>> list(sampler)
-    [4, 4, 3, 3, 0, 0,
-     4, 4, 3, 3, 0, 0,
-     4, 4, 3, 3, 0, 0,
-     4, 4, 3, 3, 0, 0,
+def get_prompt_hash(prompt_text: str) -> str:
+    return hashlib.sha256(prompt_text.encode('utf-8')).hexdigest()
 
-     1, 1, 2, 2, 6, 6,
-     1, 1, 2, 2, 6, 6,
-     1, 1, 2, 2, 6, 6,
-     1, 1, 2, 2, 6, 6]
-    ```
+class SumTree:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.tree = torch.zeros(2 * capacity - 1) 
+        self.data = [None] * capacity
+        self.write = 0
+        self.n_entries = 0
 
-    ```txt
-    mini_repeat_count = 3
-          -   -   -
-         [0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,      |
-          4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,      |
-          8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11,      |
-                                                                repeat_count = 2
-          0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,      |
-          4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,      |
-          8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11, ...] |
-          ---------   ---------   ---------   ---------
-           ---------   ---------   ---------   ---------
-            ---------   ---------   ---------   ---------
-                         batch_size = 12
-    ```
-    """
+    def add(self, p, data):
+        idx = self.write + self.capacity - 1
+        self.data[self.write] = data
+        self.update(idx, p)
+        self.write += 1
+        if self.write >= self.capacity:
+            self.write = 0
+        self.n_entries = min(self.n_entries + 1, self.capacity)
 
+    def update(self, idx, p):
+        change = p - self.tree[idx].item()
+        self.tree[idx] = p
+        self._propagate(idx, change)
+
+    def _propagate(self, idx, change):
+        parent = (idx - 1) // 2
+        self.tree[parent] += change
+        if parent != 0:
+            self._propagate(parent, change)
+
+    def get(self, s):
+        idx = self._retrieve(0, s)
+        data_idx = idx - self.capacity + 1
+        return (idx, self.tree[idx].item(), self.data[data_idx])
+
+    def _retrieve(self, idx, s):
+        left = 2 * idx + 1
+        right = left + 1
+
+        if left >= len(self.tree):
+            return idx
+
+        if s <= self.tree[left]:
+            return self._retrieve(left, s)
+        else:
+            return self._retrieve(right, s - self.tree[left])
+
+    def total(self):
+        return self.tree[0].item()
+
+    def max_priority(self):
+        return self.tree[self.capacity - 1:self.capacity - 1 + self.n_entries].max().item()
+
+    def get_leaf_value(self, idx):
+        tree_idx = idx + self.capacity - 1
+        return self.tree[tree_idx].item()
+
+class PERRepeatSampler(Sampler):
     def __init__(
         self,
         data_source: Sized,
         mini_repeat_count: int,
         batch_size: int = 1,
         repeat_count: int = 1,
+        alpha: float = 0.6,
+        beta: float = 0.4,
         shuffle: bool = True,
         seed: Optional[int] = None,
+        priority: Optional[List[float]] = None,
     ):
         self.data_source = data_source
         self.mini_repeat_count = mini_repeat_count
@@ -151,29 +167,55 @@ class RepeatSampler(Sampler):
         self.repeat_count = repeat_count
         self.num_samples = len(data_source)
         self.shuffle = shuffle
+        self.alpha = alpha
+        self.beta = beta
         self.seed = seed
 
-        if shuffle:
-            self.generator = torch.Generator()  # Create a local random generator
+        self.tree = SumTree(self.num_samples)
+        self.max_priority_value = 1.0
+        self.index_map: Dict[any, int] = {}
+
+        initial_priority = priority if priority is not None else [self.max_priority_value] * self.num_samples
+        for i, p in enumerate(initial_priority):
+            data = self.data_source[i]
+            data = get_prompt_hash(data['problem'])
+            self.max_priority_value = max(self.max_priority_value, p)
+            self.tree.add(p ** self.alpha, i)
+            if data not in self.index_map:
+                self.index_map[data] = i
+
+        if self.shuffle:
+            self.generator = torch.Generator()
             if seed is not None:
                 self.generator.manual_seed(seed)
 
+    def update_priorities_by_data(self, data, p):
+        idx = self.index_map.get(get_prompt_hash(data))
+        if idx is not None:
+            self.max_priority_value = max(self.max_priority_value, p)
+            tree_idx = idx + self.tree.capacity - 1
+            self.tree.update(tree_idx, p ** self.alpha)
+
+    def get_loss_weights(self, data):
+        """根据采样优先级返回 loss 权重，加上 PER 的 beta 修正: (1/N * 1/p_i)^beta"""
+        total_p = self.tree.total()
+        N = self.num_samples
+        idx = self.index_map.get(get_prompt_hash(data))
+        p_i = self.tree.get_leaf_value(idx)
+        prob = p_i / (total_p + 1e-8)
+        weight = (1 / (N * prob + 1e-8)) ** self.beta
+        return weight
+
     def __iter__(self):
-        if self.shuffle:
-            # E.g., [2, 4, 3, 1, 0, 6, 5] (num_samples = 7)
-            indexes = torch.randperm(self.num_samples, generator=self.generator).tolist()
-        else:
-            indexes = list(range(self.num_samples))
+        batch_indices = []
+        for _ in range(self.num_samples):
+            s = random.uniform(0, self.tree.total())
+            _, _, data_idx = self.tree.get(s)
+            batch_indices.append(data_idx)
 
-        #    [2, 4, 3, 1, 0, 6, 5]
-        # -> [[2, 4, 3], [1, 0, 6], [5]]  (batch_size = 3)
-        indexes = [indexes[i : i + self.batch_size] for i in range(0, len(indexes), self.batch_size)]
+        batch_indices = [batch_indices[i:i + self.batch_size] for i in range(0, len(batch_indices), self.batch_size)]
 
-        #    [[2, 4, 3], [1, 0, 6], [5]]
-        # -> [[2, 4, 3], [1, 0, 6]]
-        indexes = [chunk for chunk in indexes if len(chunk) == self.batch_size]
-
-        for chunk in indexes:
+        for chunk in batch_indices:
             for _ in range(self.repeat_count):
                 for index in chunk:
                     for _ in range(self.mini_repeat_count):
@@ -181,6 +223,104 @@ class RepeatSampler(Sampler):
 
     def __len__(self) -> int:
         return self.num_samples * self.mini_repeat_count * self.repeat_count
+    
+
+
+# class RepeatSampler(Sampler):
+#     """
+#     Sampler that repeats the indices of a dataset in a structured manner.
+
+#     Args:
+#         data_source (`Sized`):
+#             Dataset to sample from.
+#         mini_repeat_count (`int`):
+#             Number of times to repeat each index per batch.
+#         batch_size (`int`, *optional*, defaults to `1`):
+#             Number of unique indices per batch.
+#         repeat_count (`int`, *optional*, defaults to `1`):
+#             Number of times to repeat the full sampling process.
+#         shuffle (`bool`, *optional*, defaults to `True`):
+#             Whether to shuffle the dataset.
+#         seed (`int` or `None`, *optional*, defaults to `None`):
+#             Random seed for reproducibility (only affects this sampler).
+
+#     Example:
+#     ```python
+#     >>> sampler = RepeatRandomSampler(["a", "b", "c", "d", "e", "f", "g"], mini_repeat_count=2, batch_size=3, repeat_count=4)
+#     >>> list(sampler)
+#     [4, 4, 3, 3, 0, 0,
+#      4, 4, 3, 3, 0, 0,
+#      4, 4, 3, 3, 0, 0,
+#      4, 4, 3, 3, 0, 0,
+
+#      1, 1, 2, 2, 6, 6,
+#      1, 1, 2, 2, 6, 6,
+#      1, 1, 2, 2, 6, 6,
+#      1, 1, 2, 2, 6, 6]
+#     ```
+
+#     ```txt
+#     mini_repeat_count = 3
+#           -   -   -
+#          [0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,      |
+#           4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,      |
+#           8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11,      |
+#                                                                 repeat_count = 2
+#           0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,      |
+#           4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,      |
+#           8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11, ...] |
+#           ---------   ---------   ---------   ---------
+#            ---------   ---------   ---------   ---------
+#             ---------   ---------   ---------   ---------
+#                          batch_size = 12
+#     ```
+#     """
+
+#     def __init__(
+#         self,
+#         data_source: Sized,
+#         mini_repeat_count: int,
+#         batch_size: int = 1,
+#         repeat_count: int = 1,
+#         shuffle: bool = True,
+#         seed: Optional[int] = None,
+#     ):
+#         self.data_source = data_source
+#         self.mini_repeat_count = mini_repeat_count
+#         self.batch_size = batch_size
+#         self.repeat_count = repeat_count
+#         self.num_samples = len(data_source)
+#         self.shuffle = shuffle
+#         self.seed = seed
+
+#         if shuffle:
+#             self.generator = torch.Generator()  # Create a local random generator
+#             if seed is not None:
+#                 self.generator.manual_seed(seed)
+
+#     def __iter__(self):
+#         if self.shuffle:
+#             # E.g., [2, 4, 3, 1, 0, 6, 5] (num_samples = 7)
+#             indexes = torch.randperm(self.num_samples, generator=self.generator).tolist()
+#         else:
+#             indexes = list(range(self.num_samples))
+
+#         #    [2, 4, 3, 1, 0, 6, 5]
+#         # -> [[2, 4, 3], [1, 0, 6], [5]]  (batch_size = 3)
+#         indexes = [indexes[i : i + self.batch_size] for i in range(0, len(indexes), self.batch_size)]
+
+#         #    [[2, 4, 3], [1, 0, 6], [5]]
+#         # -> [[2, 4, 3], [1, 0, 6]]
+#         indexes = [chunk for chunk in indexes if len(chunk) == self.batch_size]
+
+#         for chunk in indexes:
+#             for _ in range(self.repeat_count):
+#                 for index in chunk:
+#                     for _ in range(self.mini_repeat_count):
+#                         yield index
+
+#     def __len__(self) -> int:
+#         return self.num_samples * self.mini_repeat_count * self.repeat_count
 
 
 # torch.nanstd doesn't exist, so we define it here
@@ -281,8 +421,7 @@ def nanmax(tensor: torch.Tensor) -> torch.Tensor:
         return torch.tensor(float("nan"), dtype=tensor.dtype, device=tensor.device)
     return torch.max(tensor[~torch.isnan(tensor)])
 
-def get_prompt_hash(prompt_text: str) -> str:
-    return hashlib.sha256(prompt_text.encode('utf-8')).hexdigest()
+
 
 class ERGRPOTrainer(Trainer):
     """
@@ -402,14 +541,16 @@ class ERGRPOTrainer(Trainer):
         ## adding feat extractor
         # self.bge = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
         # self.bge.model.to('cuda')
-        # self.extractor_name=args.extractor_name
-        # # self.sentence_extractor = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-small-en', trust_remote_code=True).cuda()
-        # if args.extractor_name == 'jina':
-        #     self.sentence_extractor = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-small-en', trust_remote_code=True).cuda()
-        # elif args.extractor_name == 'nomic':
-        #     self.sentence_extractor = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True).cuda()
-        # else:
-        #     raise NotImplementedError("Embedding model is not implemented.")
+        self.extractor_name=args.extractor_name
+        # self.sentence_extractor = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-small-en', trust_remote_code=True).cuda()
+        if args.extractor_name == 'jina':
+            self.sentence_extractor = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-small-en', trust_remote_code=True).cuda()
+        elif args.extractor_name == 'nomic':
+            self.sentence_extractor = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True).cuda()
+        elif args.extractor_name == 'hidden_state':
+            pass
+        else:
+            raise NotImplementedError("Embedding model is not implemented.")
             
         # Models
         # Trained model
@@ -501,7 +642,7 @@ class ERGRPOTrainer(Trainer):
                 reward_func.config.pad_token_id = reward_processing_class.pad_token_id
                 reward_processing_classes[i] = reward_processing_class
         self.reward_processing_classes = reward_processing_classes
-        # self.SMI_reweighting = args.SMI_reweighting
+        self.SMI_reweighting = args.SMI_reweighting
         # Data collator
         def data_collator(features):  # No data collation is needed in GRPO
             return features
@@ -773,7 +914,8 @@ class ERGRPOTrainer(Trainer):
         }
 
         if not isinstance(train_dataset, torch.utils.data.IterableDataset):
-            dataloader_params["sampler"] = self._get_train_sampler()
+            self._get_train_sampler()
+            dataloader_params["sampler"] = self.PERsampler
             dataloader_params["drop_last"] = self.args.dataloader_drop_last
             dataloader_params["worker_init_fn"] = seed_worker
             dataloader_params["prefetch_factor"] = self.args.dataloader_prefetch_factor
@@ -807,22 +949,36 @@ class ERGRPOTrainer(Trainer):
         #                                          ...
         if dataset is None:
             dataset = self.train_dataset
-        return RepeatSampler(
-            data_source=dataset,
+        # return RepeatSampler(
+        #     data_source=dataset,
+        #     mini_repeat_count=self.num_generations,
+        #     batch_size=self.args.generation_batch_size // self.num_generations,
+        #     repeat_count=self.num_iterations * self.args.steps_per_generation,
+        #     shuffle=self.shuffle_dataset,
+        #     seed=self.args.seed,
+        # )
+        self.PERsampler = PERRepeatSampler(
+            data_source=self.train_dataset,
             mini_repeat_count=self.num_generations,
             batch_size=self.args.generation_batch_size // self.num_generations,
             repeat_count=self.num_iterations * self.args.steps_per_generation,
             shuffle=self.shuffle_dataset,
             seed=self.args.seed,
-        )
+        )        
 
     def _get_eval_sampler(self, eval_dataset) -> Sampler:
         # See _get_train_sampler for an explanation of the sampler.
-        return RepeatSampler(
-            data_source=eval_dataset,
+        # return RepeatSampler(
+        #     data_source=eval_dataset,
+        #     mini_repeat_count=self.num_generations,
+        #     seed=self.args.seed,
+        # )
+        return PERRepeatSampler(
+            data_source=self.train_dataset,
             mini_repeat_count=self.num_generations,
             seed=self.args.seed,
         )
+
 
     def _enable_gradient_checkpointing(self, model: PreTrainedModel, args: GRPOConfig) -> PreTrainedModel:
         """Enables gradient checkpointing for the model."""
@@ -1223,38 +1379,41 @@ class ERGRPOTrainer(Trainer):
 
         ######### SMI reweighting
    
-        # if self.SMI_reweighting:
-        #     if isinstance(completions[0], list):  # conversational-style completions
-        #         completions_flat = [
-        #             " ".join([turn.get("content", "") for turn in comp if isinstance(turn, dict)])
-        #             for comp in completions
-        #         ]
-        #     elif isinstance(completions[0], dict):  # just a list of messages
-        #         completions_flat = [comp.get("content", "") for comp in completions]
-        #     else:  # assume plain strings (just in case)
-        #         completions_flat = [str(c) for c in completions]
+        if self.SMI_reweighting:
+            if isinstance(completions[0], list):  # conversational-style completions
+                completions_flat = [
+                    " ".join([turn.get("content", "") for turn in comp if isinstance(turn, dict)])
+                    for comp in completions
+                ]
+            elif isinstance(completions[0], dict):  # just a list of messages
+                completions_flat = [comp.get("content", "") for comp in completions]
+            else:  # assume plain strings (just in case)
+                completions_flat = [str(c) for c in completions]
 
-        #     if  self.extractor_name=='nomic':
-        #         embeddings = self.sentence_extractor.encode(completions_flat,max_tokens_per_text=3584,device=device)
-        #     elif self.extractor_name== 'jina':
-        #         embeddings = self.sentence_extractor.encode(completions_flat,max_length=3584,device=device)
-        #     else:
-        #         raise NotImplementedError("Embedding model is not implemented.")
+            if  self.extractor_name=='nomic':
+                embeddings = self.sentence_extractor.encode(completions_flat,max_tokens_per_text=3584,device=device)
+            elif self.extractor_name== 'jina':
+                embeddings = self.sentence_extractor.encode(completions_flat,max_length=3584,device=device)
+            elif self.extractor_name == 'hidden_state':
+                last_hidden_state = self._get_last_hidden_state(self.model, prompt_completion_ids, attention_mask, logits_to_keep)
+                embeddings = torch.mean(last_hidden_state, dim=1)
+            else:
+                raise NotImplementedError("Embedding model is not implemented.")
                 
-        #     embeddings = torch.from_numpy(embeddings).to(device) 
-        #     embeddings = F.normalize(embeddings, p=2, dim=1)
+            embeddings = torch.from_numpy(embeddings).to(device) 
+            embeddings = F.normalize(embeddings, p=2, dim=1)
 
-        #     # print("embeddings:",embeddings.shape)
+            # print("embeddings:",embeddings.shape)
 
-        #     similarity_matrix = embeddings @ embeddings.T
-        #     similarity_sums = similarity_matrix.sum(dim=1)
-        #     diversity_weights = 1.0 / (similarity_sums + 1e-6)
+            similarity_matrix = embeddings @ embeddings.T
+            similarity_sums = similarity_matrix.sum(dim=1)
+            diversity_weights = 1.0 / (similarity_sums + 1e-6)
 
 
 
-        #     diversity_weights = gather(diversity_weights) 
+            diversity_weights = gather(diversity_weights) 
 
-        #     rewards = rewards * diversity_weights
+            rewards = rewards * diversity_weights
         
     
         # Compute grouped-wise rewards
@@ -1342,6 +1501,21 @@ class ERGRPOTrainer(Trainer):
         all_process_advantages = advantages.clone()  # keep the aggregated advantages for logging
         
         advantages = advantages[process_slice]
+
+
+        # 获得权重
+        weights = torch.ones(len(advantages), device=device)  # default weights for PERsampler
+        # 更新PERsampler权重
+        for ii in range(0, len(advantages)):
+            prompt_key = inputs[ii]['problem']
+
+            self.PERsampler.update_priorities_by_data(prompt_key, abs(advantages[ii].item()) + 1e-6)
+
+            weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
+
+
+
+
         # Log the metrics
         if mode == "train":
             self.state.num_input_tokens_seen += self.accelerator.gather(attention_mask.sum()).sum().item()
@@ -1388,6 +1562,7 @@ class ERGRPOTrainer(Trainer):
             "completion_mask": completion_mask,
             "advantages": advantages,
             "old_per_token_logps": old_per_token_logps,
+            "weights": weights,
         }
 
     def compute_liger_loss(self, unwrapped_model, inputs):
@@ -1481,6 +1656,8 @@ class ERGRPOTrainer(Trainer):
         
         # Compute the loss
         advantages = inputs["advantages"]
+
+        advantages = advantages * torch.tensor(inputs["weights"], device=advantages.device)
         # When using num_iterations == 1 and steps_per_generation <= gradient_accumulation_steps
         # old_per_token_logps == per_token_logps, so we can skip it's computation
         # (see _generate_and_score_completions) and use per_token_logps.detach() instead.
@@ -1509,6 +1686,10 @@ class ERGRPOTrainer(Trainer):
             loss = (per_token_loss * completion_mask).sum() / (per_token_loss.size(0) * self.max_completion_length)
         else:
             raise ValueError(f"Unknown loss type: {self.loss_type}")
+        
+        # 计算loss权重
+        # weights = self.PERsampler.get_weights(inputs["problems"])
+        
 
         # Log the metrics
         mode = "train" if self.model.training else "eval"
