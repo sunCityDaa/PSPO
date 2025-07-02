@@ -38,32 +38,27 @@ get_revision() {
     # BNPO
     if [ "$exp" = "1" ]; then
         case $step in
-            50)  echo "46d398a66c2fb69144a9f1a5a3403c2c58323359" ;;
-            100) echo "c1b6fd9c7671d5e03227a61617ba3b2ade3122fa" ;;
-            150) echo "67ef068f9d1283c1ae1e786b6d6b083bb0f2abda" ;;
-            200) echo "cb20ade5820092f60e2729235e855f148371933d" ;;
-            250) echo "7ff15366c653975ddd767b2a62385432cbc1bb33" ;;
-            300) echo "4c49019f2369261b8ef49c5ce09e0a1e8990c7ed" ;;
-            350) echo "dcf5c44784695307ec21d20be348400848be151b" ;;
-            400) echo "0100f8beed8c73f9582dc766bd850b5251b7ef16" ;;
-            450) echo "18d72d2da2e4d10ed7dc4de71a443b71c59ac274" ;;
-            500) echo "36e774021fb940b7be7916a79578485351374abb" ;;
+            50)  echo "/data/ER-GRPO/data/BNPO/checkpoint-50" ;;
+            100) echo "/data/ER-GRPO/data/BNPO/checkpoint-100" ;;
+            150) echo "/data/ER-GRPO/data/BNPO/checkpoint-150" ;;
+            200) echo "/data/ER-GRPO/data/BNPO/checkpoint-200" ;;
+            250) echo "/data/ER-GRPO/data/BNPO/checkpoint-250" ;;
+            300) echo "/data/ER-GRPO/data/BNPO/checkpoint-300" ;;
+            350) echo "/data/ER-GRPO/data/BNPO/checkpoint-350" ;;
+            400) echo "/data/ER-GRPO/data/BNPO/checkpoint-400" ;;
+            450) echo "/data/ER-GRPO/data/BNPO/checkpoint-450" ;;
+            500) echo "/data/ER-GRPO/data/BNPO/checkpoint-500" ;;
             *) echo "unknown" ;;
         esac
     # Experiment 2 revisions
     # DRGRPO
     elif [ "$exp" = "2" ]; then
         case $step in
-            # 50)  echo "3fa00db18c41611c1ae70d1e6b5f668bb2d8592e" ;;
-            # 100) echo "c609c349f4b2abc1ec14dcb496715559ad9dede6" ;;
-            # 150) echo "1b8635e91636c9029b6d55b26829e2f749003392" ;;
-            # 200) echo "2d942ed28c4b0a1b3373376590a90248347b5d57" ;;
-            # 250) echo "9ae3908996d6495cd8725e370ddb92af24559dc1" ;;
-            # 300) echo "dfa856ecd8941aa6bb22712acd33faae2a388459" ;;
-            # 350) echo "02a7a65eed7887ba267912c136405ce9923e9e05" ;;
-            # 400) echo "e43e96f04acdf7e1df3c1f40e4feba569f86ece8" ;;
-            # 450) echo "95fe21a893b3bc9a40332ee9f17badee09a835a1" ;;
-            # 500) echo "ed5b5f719716abf240ef0f7e13d31f72c28df32c" ;;
+            50)  echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-50" ;;
+            100) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-100" ;;
+            150) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-150" ;;
+            200) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-200" ;;
+            250) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-250" ;;
             300) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-300" ;;
             350) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-350" ;;
             400) echo "/data/ER-GRPO/data/Dr_GRPO/checkpoint-400" ;;
@@ -75,23 +70,23 @@ get_revision() {
     # GRPO
     elif [ "$exp" = "3" ]; then
         case $step in
-            50)  echo "e06b6eca6e61bc88b5541e692fe3ca89c152ad1f" ;;
-            100) echo "7a4eff223674072e4d75cf8b63022f98069f8f65" ;;
-            150) echo "c7d3a5905f90d6a9185b432e35c74f013b34c657" ;;
-            200) echo "f7904a88368952a8a434fcf10ff2495a472135e3" ;;
-            250) echo "557d5384b56f270eb3f4f12381fa054df8e6d271" ;;
-            300) echo "d2d336317caf3e29ca012cf00ef33820c00f243c" ;;
-            350) echo "9eef018b26f9e1c9adfb54f1759da8b4f1dbe2e2" ;;
-            400) echo "45bdb351cd2c828af00b0bd69d3f325c9b4870ad" ;;
-            450) echo "389f81cd1133887fc128c854c0c3f83abdead699" ;;
-            500) echo "14f6576f0b3340a127f87c28028486eb686a5f75" ;;
+            50)  echo "/data/ER-GRPO/data/GRPO/checkpoint-50" ;;
+            100) echo "/data/ER-GRPO/data/GRPO/checkpoint-100" ;;
+            150) echo "/data/ER-GRPO/data/GRPO/checkpoint-150" ;;
+            200) echo "/data/ER-GRPO/data/GRPO/checkpoint-200" ;;
+            250) echo "/data/ER-GRPO/data/GRPO/checkpoint-250" ;;
+            300) echo "/data/ER-GRPO/data/GRPO/checkpoint-300" ;;
+            350) echo "/data/ER-GRPO/data/GRPO/checkpoint-350" ;;
+            400) echo "/data/ER-GRPO/data/GRPO/checkpoint-400" ;;
+            450) echo "/data/ER-GRPO/data/GRPO/checkpoint-450" ;;
+            500) echo "/data/ER-GRPO/data/GRPO/checkpoint-500" ;;
             *) echo "unknown" ;;
         esac
     # ERGRPO-STD
     elif [ "$exp" = "4" ]; then
         case $step in
-            # 50)  echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-50" ;;
-            # 100) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-100" ;;
+            50)  echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-50" ;;
+            100) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-100" ;;
             150) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-150" ;;
             200) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-200" ;;
             250) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-250" ;;
@@ -147,6 +142,7 @@ get_revision() {
             500) echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-500" ;;
             *) echo "unknown" ;;
         esac
+    # ERGRPO  
     elif [ "$exp" = "8" ]; then
         case $step in
             50)  echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-50" ;;
@@ -161,6 +157,7 @@ get_revision() {
             500) echo "/data/ER-GRPO/data/new-ER-GRPO-alpha90/checkpoint-500" ;;
             *) echo "unknown" ;;
         esac
+    # 
     elif [ "$exp" = "9" ]; then
         case $step in
             50)  echo "/data/ER-GRPO/data/new-ERPER-GRPO-alpha90/checkpoint-50" ;;
@@ -187,10 +184,8 @@ get_steps() {
     case $exp in
         1) echo "50 100 150 200 250 300 350 400 450 500" ;;
         2) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        # 2) echo "300 350 400 450 500" ;;
         3) echo "50 100 150 200 250 300 350 400 450 500" ;;
         4) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        # 4) echo "150 200 250 300 350 400 450 500" ;;
         5) echo "50 100 150 200 250 300 350 400 450 500" ;;
         6) echo "50 100 150 200 250 300 350 400 450 500" ;;
         7) echo "50 100 150 200 250 300 350 400 450 500" ;;
