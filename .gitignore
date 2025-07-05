@@ -1,4 +1,5 @@
 /data/*
+/Qwen-Math-1.5B-data/*
 /wandb/*
 
 # ./src/open_r1/_pycache_/*

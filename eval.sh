@@ -85,16 +85,16 @@ get_revision() {
     # ERGRPO-STD
     elif [ "$exp" = "4" ]; then
         case $step in
-            50)  echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-50" ;;
-            100) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-100" ;;
-            150) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-150" ;;
-            200) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-200" ;;
-            250) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-250" ;;
-            300) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-300" ;;
-            350) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-350" ;;
-            400) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-400" ;;
-            450) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-450" ;;
-            500) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-500" ;;
+            50)  echo "/data/ER-GRPO/data/new-PER-GRPO-alpha90/checkpoint-50" ;;
+            100) echo "/data/ER-GRPO/data/new-PER-GRPO-alpha90/checkpoint-100" ;;
+            150) echo "/data/ER-GRPO/data/new-PER-GRPO-alpha90/checkpoint-150" ;;
+            # 200) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-200" ;;
+            # 250) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-250" ;;
+            # 300) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-300" ;;
+            # 350) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-350" ;;
+            # 400) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-400" ;;
+            # 450) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-450" ;;
+            # 500) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-500" ;;
             *) echo "unknown" ;;
         esac
     # ERGRPO 默认reward alpha = 0.8
@@ -185,7 +185,8 @@ get_steps() {
         1) echo "50 100 150 200 250 300 350 400 450 500" ;;
         2) echo "50 100 150 200 250 300 350 400 450 500" ;;
         3) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        4) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        # 4) echo "50 100 150 200 250 300 350 400 450 500" ;;
+        4) echo "50 100 150" ;;
         5) echo "50 100 150 200 250 300 350 400 450 500" ;;
         6) echo "50 100 150 200 250 300 350 400 450 500" ;;
         7) echo "50 100 150 200 250 300 350 400 450 500" ;;

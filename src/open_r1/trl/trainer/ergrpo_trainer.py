@@ -1443,35 +1443,36 @@ class ERGRPOTrainer(Trainer):
         #         self.reward_stats[prompt_key][1] = std_grouped_rewards
 
 
-        last_mean_grouped_rewards = torch.zeros_like(mean_grouped_rewards)
-        last_std_grouped_rewards = torch.zeros_like(std_grouped_rewards)
+        # # 开始
+        # last_mean_grouped_rewards = torch.zeros_like(mean_grouped_rewards)
+        # last_std_grouped_rewards = torch.zeros_like(std_grouped_rewards)
 
-        for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
-            prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
-            prompt_key = get_prompt_hash(prompt_key)
-            if self.reward_stats.get(prompt_key):
-                for jj in range(0, len(self.reward_funcs)):
-                    last_mean_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][0][jj]
-                    last_std_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][1][jj]
-            else:
-                for jj in range(0, len(self.reward_funcs)):
-                    last_mean_grouped_rewards[ii + jj] = mean_grouped_rewards[ii + jj]
-                    last_std_grouped_rewards[ii + jj] = std_grouped_rewards[ii + jj]
+        # for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
+        #     prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
+        #     prompt_key = get_prompt_hash(prompt_key)
+        #     if self.reward_stats.get(prompt_key):
+        #         for jj in range(0, len(self.reward_funcs)):
+        #             last_mean_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][0][jj]
+        #             last_std_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][1][jj]
+        #     else:
+        #         for jj in range(0, len(self.reward_funcs)):
+        #             last_mean_grouped_rewards[ii + jj] = mean_grouped_rewards[ii + jj]
+        #             last_std_grouped_rewards[ii + jj] = std_grouped_rewards[ii + jj]
                 
-        # 更新当前的reward和std
-        for ii in range(0, len(mean_grouped_rewards)):
-            mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
-            std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
+        # # 更新当前的reward和std
+        # for ii in range(0, len(mean_grouped_rewards)):
+        #     mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
+        #     std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
 
-        # 更新reward_stats
-        for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
-            prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
-            prompt_key = get_prompt_hash(prompt_key)
-            self.reward_stats[prompt_key][0] = mean_grouped_rewards[ii : ii +  len(self.reward_funcs)]
-            self.reward_stats[prompt_key][1] = std_grouped_rewards[ii : ii +  len(self.reward_funcs)]
+        # # 更新reward_stats
+        # for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
+        #     prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
+        #     prompt_key = get_prompt_hash(prompt_key)
+        #     self.reward_stats[prompt_key][0] = mean_grouped_rewards[ii : ii +  len(self.reward_funcs)]
+        #     self.reward_stats[prompt_key][1] = std_grouped_rewards[ii : ii +  len(self.reward_funcs)]
 
-        del last_mean_grouped_rewards, last_std_grouped_rewards  # free memory
-        # 结束 
+        # del last_mean_grouped_rewards, last_std_grouped_rewards  # free memory
+        # # 结束 
 
 
 
