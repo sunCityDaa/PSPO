@@ -16,12 +16,20 @@
 
 
 
+# BASE_MODEL_ARGS="dtype=bfloat16,\
+# max_model_length=32768,\
+# gpu_memory_utilization=0.8,\
+# tensor_parallel_size=2,\
+# max_num_batched_tokens=32768,\
+# generation_parameters={max_new_tokens:32768,temperature:0.6,top_p:0.95}"
+
+
 BASE_MODEL_ARGS="dtype=bfloat16,\
-max_model_length=32768,\
+max_model_length=4096,\
 gpu_memory_utilization=0.8,\
 tensor_parallel_size=2,\
-max_num_batched_tokens=32768,\
-generation_parameters={max_new_tokens:32768,temperature:0.6,top_p:0.95}"
+max_num_batched_tokens=4096,\
+generation_parameters={max_new_tokens:3096,temperature:0.6,top_p:0.95}"
 
 
 # Define evaluation tasks
@@ -85,13 +93,13 @@ get_revision() {
     # ERGRPO-STD
     elif [ "$exp" = "4" ]; then
         case $step in
-            50)  echo "/data/ER-GRPO/data/new-PER-GRPO-alpha90/checkpoint-50" ;;
-            100) echo "/data/ER-GRPO/data/new-PER-GRPO-alpha90/checkpoint-100" ;;
-            150) echo "/data/ER-GRPO/data/new-PER-GRPO-alpha90/checkpoint-150" ;;
-            # 200) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-200" ;;
-            # 250) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-250" ;;
-            # 300) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-300" ;;
-            # 350) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-350" ;;
+            50)  echo "/data/ER-GRPO/Qwen-Math-1.5B-data/GRPO/checkpoint-50" ;;
+            100) echo "/data/ER-GRPO/Qwen-Math-1.5B-data/GRPO/checkpoint-100" ;;
+            150) echo "/data/ER-GRPO/Qwen-Math-1.5B-data/GRPO/checkpoint-150" ;;
+            200) echo "/data/ER-GRPO/Qwen-Math-1.5B-data/GRPO/checkpoint-200" ;;
+            250) echo "/data/ER-GRPO/Qwen-Math-1.5B-data/GRPO/checkpoint-250" ;;
+            300) echo "/data/ER-GRPO/Qwen-Math-1.5B-data/GRPO/checkpoint-300" ;;
+            350) echo "/data/ER-GRPO/Qwen-Math-1.5B-data/GRPO/checkpoint-350" ;;
             # 400) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-400" ;;
             # 450) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-450" ;;
             # 500) echo "/data/ER-GRPO/data/ER-GRPO_std/checkpoint-500" ;;
@@ -186,7 +194,7 @@ get_steps() {
         2) echo "50 100 150 200 250 300 350 400 450 500" ;;
         3) echo "50 100 150 200 250 300 350 400 450 500" ;;
         # 4) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        4) echo "50 100 150" ;;
+        4) echo "50 100 150 200 250 300 350" ;;
         5) echo "50 100 150 200 250 300 350 400 450 500" ;;
         6) echo "50 100 150 200 250 300 350 400 450 500" ;;
         7) echo "50 100 150 200 250 300 350 400 450 500" ;;
@@ -201,7 +209,7 @@ run_evaluation() {
     experiment=$1
     step=$2
     revision=$(get_revision "$experiment" "$step")
-    output_dir="logs/evals/Exp${experiment}_${step}"
+    output_dir="logs/evals-Qwen1.5B/Exp${experiment}_${step}"
     
     # Check if revision is valid
     if [ "$revision" = "unknown" ]; then

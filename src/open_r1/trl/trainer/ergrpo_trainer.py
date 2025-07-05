@@ -226,101 +226,101 @@ class PERRepeatSampler(Sampler):
     
 
 
-# class RepeatSampler(Sampler):
-#     """
-#     Sampler that repeats the indices of a dataset in a structured manner.
+class RepeatSampler(Sampler):
+    """
+    Sampler that repeats the indices of a dataset in a structured manner.
 
-#     Args:
-#         data_source (`Sized`):
-#             Dataset to sample from.
-#         mini_repeat_count (`int`):
-#             Number of times to repeat each index per batch.
-#         batch_size (`int`, *optional*, defaults to `1`):
-#             Number of unique indices per batch.
-#         repeat_count (`int`, *optional*, defaults to `1`):
-#             Number of times to repeat the full sampling process.
-#         shuffle (`bool`, *optional*, defaults to `True`):
-#             Whether to shuffle the dataset.
-#         seed (`int` or `None`, *optional*, defaults to `None`):
-#             Random seed for reproducibility (only affects this sampler).
+    Args:
+        data_source (`Sized`):
+            Dataset to sample from.
+        mini_repeat_count (`int`):
+            Number of times to repeat each index per batch.
+        batch_size (`int`, *optional*, defaults to `1`):
+            Number of unique indices per batch.
+        repeat_count (`int`, *optional*, defaults to `1`):
+            Number of times to repeat the full sampling process.
+        shuffle (`bool`, *optional*, defaults to `True`):
+            Whether to shuffle the dataset.
+        seed (`int` or `None`, *optional*, defaults to `None`):
+            Random seed for reproducibility (only affects this sampler).
 
-#     Example:
-#     ```python
-#     >>> sampler = RepeatRandomSampler(["a", "b", "c", "d", "e", "f", "g"], mini_repeat_count=2, batch_size=3, repeat_count=4)
-#     >>> list(sampler)
-#     [4, 4, 3, 3, 0, 0,
-#      4, 4, 3, 3, 0, 0,
-#      4, 4, 3, 3, 0, 0,
-#      4, 4, 3, 3, 0, 0,
+    Example:
+    ```python
+    >>> sampler = RepeatRandomSampler(["a", "b", "c", "d", "e", "f", "g"], mini_repeat_count=2, batch_size=3, repeat_count=4)
+    >>> list(sampler)
+    [4, 4, 3, 3, 0, 0,
+     4, 4, 3, 3, 0, 0,
+     4, 4, 3, 3, 0, 0,
+     4, 4, 3, 3, 0, 0,
 
-#      1, 1, 2, 2, 6, 6,
-#      1, 1, 2, 2, 6, 6,
-#      1, 1, 2, 2, 6, 6,
-#      1, 1, 2, 2, 6, 6]
-#     ```
+     1, 1, 2, 2, 6, 6,
+     1, 1, 2, 2, 6, 6,
+     1, 1, 2, 2, 6, 6,
+     1, 1, 2, 2, 6, 6]
+    ```
 
-#     ```txt
-#     mini_repeat_count = 3
-#           -   -   -
-#          [0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,      |
-#           4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,      |
-#           8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11,      |
-#                                                                 repeat_count = 2
-#           0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,      |
-#           4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,      |
-#           8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11, ...] |
-#           ---------   ---------   ---------   ---------
-#            ---------   ---------   ---------   ---------
-#             ---------   ---------   ---------   ---------
-#                          batch_size = 12
-#     ```
-#     """
+    ```txt
+    mini_repeat_count = 3
+          -   -   -
+         [0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,      |
+          4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,      |
+          8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11,      |
+                                                                repeat_count = 2
+          0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,      |
+          4,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,      |
+          8,  8,  8,  9,  9,  9, 10, 10, 10, 11, 11, 11, ...] |
+          ---------   ---------   ---------   ---------
+           ---------   ---------   ---------   ---------
+            ---------   ---------   ---------   ---------
+                         batch_size = 12
+    ```
+    """
 
-#     def __init__(
-#         self,
-#         data_source: Sized,
-#         mini_repeat_count: int,
-#         batch_size: int = 1,
-#         repeat_count: int = 1,
-#         shuffle: bool = True,
-#         seed: Optional[int] = None,
-#     ):
-#         self.data_source = data_source
-#         self.mini_repeat_count = mini_repeat_count
-#         self.batch_size = batch_size
-#         self.repeat_count = repeat_count
-#         self.num_samples = len(data_source)
-#         self.shuffle = shuffle
-#         self.seed = seed
+    def __init__(
+        self,
+        data_source: Sized,
+        mini_repeat_count: int,
+        batch_size: int = 1,
+        repeat_count: int = 1,
+        shuffle: bool = True,
+        seed: Optional[int] = None,
+    ):
+        self.data_source = data_source
+        self.mini_repeat_count = mini_repeat_count
+        self.batch_size = batch_size
+        self.repeat_count = repeat_count
+        self.num_samples = len(data_source)
+        self.shuffle = shuffle
+        self.seed = seed
 
-#         if shuffle:
-#             self.generator = torch.Generator()  # Create a local random generator
-#             if seed is not None:
-#                 self.generator.manual_seed(seed)
+        if shuffle:
+            self.generator = torch.Generator()  # Create a local random generator
+            if seed is not None:
+                self.generator.manual_seed(seed)
 
-#     def __iter__(self):
-#         if self.shuffle:
-#             # E.g., [2, 4, 3, 1, 0, 6, 5] (num_samples = 7)
-#             indexes = torch.randperm(self.num_samples, generator=self.generator).tolist()
-#         else:
-#             indexes = list(range(self.num_samples))
+    def __iter__(self):
+        if self.shuffle:
+            # E.g., [2, 4, 3, 1, 0, 6, 5] (num_samples = 7)
+            indexes = torch.randperm(self.num_samples, generator=self.generator).tolist()
+        else:
+            indexes = list(range(self.num_samples))
 
-#         #    [2, 4, 3, 1, 0, 6, 5]
-#         # -> [[2, 4, 3], [1, 0, 6], [5]]  (batch_size = 3)
-#         indexes = [indexes[i : i + self.batch_size] for i in range(0, len(indexes), self.batch_size)]
+        #    [2, 4, 3, 1, 0, 6, 5]
+        # -> [[2, 4, 3], [1, 0, 6], [5]]  (batch_size = 3)
+        indexes = [indexes[i : i + self.batch_size] for i in range(0, len(indexes), self.batch_size)]
 
-#         #    [[2, 4, 3], [1, 0, 6], [5]]
-#         # -> [[2, 4, 3], [1, 0, 6]]
-#         indexes = [chunk for chunk in indexes if len(chunk) == self.batch_size]
+        #    [[2, 4, 3], [1, 0, 6], [5]]
+        # -> [[2, 4, 3], [1, 0, 6]]
+        indexes = [chunk for chunk in indexes if len(chunk) == self.batch_size]
 
-#         for chunk in indexes:
-#             for _ in range(self.repeat_count):
-#                 for index in chunk:
-#                     for _ in range(self.mini_repeat_count):
-#                         yield index
+        for chunk in indexes:
+            for _ in range(self.repeat_count):
+                for index in chunk:
+                    for _ in range(self.mini_repeat_count):
+                        yield index
 
-#     def __len__(self) -> int:
-#         return self.num_samples * self.mini_repeat_count * self.repeat_count
+    def __len__(self) -> int:
+        return self.num_samples * self.mini_repeat_count * self.repeat_count
 
 
 # torch.nanstd doesn't exist, so we define it here
@@ -669,7 +669,9 @@ class ERGRPOTrainer(Trainer):
         self.reward_alpha = args.reward_alpha 
         # 记录每个prompt的奖励统计信息
         self.reward_stats = defaultdict(lambda: [None, None])
- 
+
+        # 是否使用per
+        self.use_per = args.use_per
 
         # Datasets
         self.shuffle_dataset = args.shuffle_dataset
@@ -957,14 +959,24 @@ class ERGRPOTrainer(Trainer):
         #     shuffle=self.shuffle_dataset,
         #     seed=self.args.seed,
         # )
-        self.PERsampler = PERRepeatSampler(
-            data_source=self.train_dataset,
+        if self.use_per:
+            self.PERsampler = PERRepeatSampler(
+                data_source=self.train_dataset,
+                mini_repeat_count=self.num_generations,
+                batch_size=self.args.generation_batch_size // self.num_generations,
+                repeat_count=self.num_iterations * self.args.steps_per_generation,
+                shuffle=self.shuffle_dataset,
+                seed=self.args.seed,
+            )       
+        else:
+            self.PERsampler = RepeatSampler(
+            data_source=dataset,
             mini_repeat_count=self.num_generations,
             batch_size=self.args.generation_batch_size // self.num_generations,
             repeat_count=self.num_iterations * self.args.steps_per_generation,
             shuffle=self.shuffle_dataset,
             seed=self.args.seed,
-        )        
+        )
 
     def _get_eval_sampler(self, eval_dataset) -> Sampler:
         # See _get_train_sampler for an explanation of the sampler.
@@ -973,11 +985,18 @@ class ERGRPOTrainer(Trainer):
         #     mini_repeat_count=self.num_generations,
         #     seed=self.args.seed,
         # )
-        return PERRepeatSampler(
-            data_source=self.train_dataset,
+        if self.use_per:
+            return PERRepeatSampler(
+                data_source=self.train_dataset,
+                mini_repeat_count=self.num_generations,
+                seed=self.args.seed,
+            )
+        else:
+           return RepeatSampler(
+            data_source=eval_dataset,
             mini_repeat_count=self.num_generations,
             seed=self.args.seed,
-        )
+            ) 
 
 
     def _enable_gradient_checkpointing(self, model: PreTrainedModel, args: GRPOConfig) -> PreTrainedModel:
@@ -1443,36 +1462,36 @@ class ERGRPOTrainer(Trainer):
         #         self.reward_stats[prompt_key][1] = std_grouped_rewards
 
 
-        # # 开始
-        # last_mean_grouped_rewards = torch.zeros_like(mean_grouped_rewards)
-        # last_std_grouped_rewards = torch.zeros_like(std_grouped_rewards)
+        # 开始
+        last_mean_grouped_rewards = torch.zeros_like(mean_grouped_rewards)
+        last_std_grouped_rewards = torch.zeros_like(std_grouped_rewards)
 
-        # for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
-        #     prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
-        #     prompt_key = get_prompt_hash(prompt_key)
-        #     if self.reward_stats.get(prompt_key):
-        #         for jj in range(0, len(self.reward_funcs)):
-        #             last_mean_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][0][jj]
-        #             last_std_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][1][jj]
-        #     else:
-        #         for jj in range(0, len(self.reward_funcs)):
-        #             last_mean_grouped_rewards[ii + jj] = mean_grouped_rewards[ii + jj]
-        #             last_std_grouped_rewards[ii + jj] = std_grouped_rewards[ii + jj]
+        for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
+            prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
+            prompt_key = get_prompt_hash(prompt_key)
+            if self.reward_stats.get(prompt_key):
+                for jj in range(0, len(self.reward_funcs)):
+                    last_mean_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][0][jj]
+                    last_std_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][1][jj]
+            else:
+                for jj in range(0, len(self.reward_funcs)):
+                    last_mean_grouped_rewards[ii + jj] = mean_grouped_rewards[ii + jj]
+                    last_std_grouped_rewards[ii + jj] = std_grouped_rewards[ii + jj]
                 
-        # # 更新当前的reward和std
-        # for ii in range(0, len(mean_grouped_rewards)):
-        #     mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
-        #     std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
+        # 更新当前的reward和std
+        for ii in range(0, len(mean_grouped_rewards)):
+            mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
+            std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
 
-        # # 更新reward_stats
-        # for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
-        #     prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
-        #     prompt_key = get_prompt_hash(prompt_key)
-        #     self.reward_stats[prompt_key][0] = mean_grouped_rewards[ii : ii +  len(self.reward_funcs)]
-        #     self.reward_stats[prompt_key][1] = std_grouped_rewards[ii : ii +  len(self.reward_funcs)]
+        # 更新reward_stats
+        for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
+            prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
+            prompt_key = get_prompt_hash(prompt_key)
+            self.reward_stats[prompt_key][0] = mean_grouped_rewards[ii : ii +  len(self.reward_funcs)]
+            self.reward_stats[prompt_key][1] = std_grouped_rewards[ii : ii +  len(self.reward_funcs)]
 
-        # del last_mean_grouped_rewards, last_std_grouped_rewards  # free memory
-        # # 结束 
+        del last_mean_grouped_rewards, last_std_grouped_rewards  # free memory
+        # 结束 
 
 
 
@@ -1506,13 +1525,15 @@ class ERGRPOTrainer(Trainer):
 
         # 获得权重
         weights = torch.ones(len(advantages), device=device)  # default weights for PERsampler
-        # 更新PERsampler权重
-        for ii in range(0, len(advantages)):
-            prompt_key = inputs[ii]['problem']
 
-            self.PERsampler.update_priorities_by_data(prompt_key, abs(advantages[ii].item()) + 1e-6)
+        if self.use_per:
+            # 更新PERsampler权重
+            for ii in range(0, len(advantages)):
+                prompt_key = inputs[ii]['problem']
 
-            weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
+                self.PERsampler.update_priorities_by_data(prompt_key, abs(advantages[ii].item()) + 1e-6)
+
+                weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
 
 
 
@@ -1658,7 +1679,11 @@ class ERGRPOTrainer(Trainer):
         # Compute the loss
         advantages = inputs["advantages"]
 
-        advantages = advantages * torch.tensor(inputs["weights"], device=advantages.device)
+        # 权重在这里更新
+        if self.use_per:
+            advantages = advantages * torch.tensor(inputs["weights"], device=advantages.device)
+
+
         # When using num_iterations == 1 and steps_per_generation <= gradient_accumulation_steps
         # old_per_token_logps == per_token_logps, so we can skip it's computation
         # (see _generate_and_score_completions) and use per_token_logps.detach() instead.
@@ -1688,9 +1713,7 @@ class ERGRPOTrainer(Trainer):
         else:
             raise ValueError(f"Unknown loss type: {self.loss_type}")
         
-        # 计算loss权重
-        # weights = self.PERsampler.get_weights(inputs["problems"])
-        
+
 
         # Log the metrics
         mode = "train" if self.model.training else "eval"

@@ -531,6 +531,12 @@ class GRPOConfig(TrainingArguments):
             "help": "reward update parameter."
         },
     )
+    use_per: bool = field(
+        default=False,
+        metadata={
+            "help": "use per."
+        },
+    )
 
 
 

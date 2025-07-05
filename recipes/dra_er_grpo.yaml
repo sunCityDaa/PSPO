@@ -79,6 +79,8 @@ extractor_name: hidden_state
 # 如果reward alpha是1.0就是原始的GRPO算法 ,reward_alpha: 0.1或者0.9
 reward_alpha: 0.9
 
+use_per: true  # 是否使用PER
+
 
 # 需要配置的GRPO参数，也即修改的默认配置
 beta: 0.04
