@@ -1440,59 +1440,40 @@ class ERGRPOTrainer(Trainer):
         std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
         is_std_zero = torch.isclose(std_grouped_rewards, torch.zeros_like(std_grouped_rewards))
 
-        # global last_mean_grouped_rewards, last_std_grouped_rewards
-        # for ii in range(len(inputs)):
-        #     # If the std is zero, we set it to 1 to avoid division by zero
-        #     prompt_key = inputs[ii]['problem']
-        #     prompt_key = get_prompt_hash(prompt_key)
-        #     if self.reward_stats.get(prompt_key) is None:
-        #         # Initialize the reward stats for the first prompt
-        #         self.reward_stats[prompt_key] = [mean_grouped_rewards[ii].clone(), std_grouped_rewards[ii].clone()]
-        #         last_mean_grouped_rewards = mean_grouped_rewards.clone()
-        #         last_std_grouped_rewards = std_grouped_rewards.clone()
-        #     else:
-        #         last_mean_grouped_rewards = self.reward_stats[prompt_key][0]
-        #         last_std_grouped_rewards = self.reward_stats[prompt_key][1]
-
-        #         mean_grouped_rewards = self.reward_alpha * mean_grouped_rewards + (1 - self.reward_alpha) * last_mean_grouped_rewards
-        #         std_grouped_rewards = self.reward_alpha * std_grouped_rewards + (1 - self.reward_alpha) * last_std_grouped_rewards
-
-        #         # 保存上一次调用此prompt的奖励和方差，和这一次的均值方差进行加权
-        #         self.reward_stats[prompt_key][0] = mean_grouped_rewards
-        #         self.reward_stats[prompt_key][1] = std_grouped_rewards
-
-
+        
+        # 对于mini_repeat_count > 1的情况， prompt会被重复多次，下面是将一样的prompt看成不同的
         # 开始
         last_mean_grouped_rewards = torch.zeros_like(mean_grouped_rewards)
         last_std_grouped_rewards = torch.zeros_like(std_grouped_rewards)
 
-        for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
-            prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
+        for ii in range(0, len(mean_grouped_rewards) // 2 ):
+            prompt_key = inputs[ii * self.num_generations]['problem']
             prompt_key = get_prompt_hash(prompt_key)
             if self.reward_stats.get(prompt_key):
-                for jj in range(0, len(self.reward_funcs)):
-                    last_mean_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][0][jj]
-                    last_std_grouped_rewards[ii + jj] = self.reward_stats[prompt_key][1][jj]
+                last_mean_grouped_rewards[ii] = self.reward_stats[prompt_key][0]
+                last_std_grouped_rewards[ii] = self.reward_stats[prompt_key][1]
             else:
-                for jj in range(0, len(self.reward_funcs)):
-                    last_mean_grouped_rewards[ii + jj] = mean_grouped_rewards[ii + jj]
-                    last_std_grouped_rewards[ii + jj] = std_grouped_rewards[ii + jj]
-                
+                last_mean_grouped_rewards[ii] = (mean_grouped_rewards[ii] + mean_grouped_rewards[ii + len(mean_grouped_rewards) // 2]) / 2.0
+                last_std_grouped_rewards[ii] = (std_grouped_rewards[ii] + std_grouped_rewards[ii + len(mean_grouped_rewards) // 2]) / 2.0
+
+        mean_grouped_rewards[len(mean_grouped_rewards) // 2 :] = mean_grouped_rewards[len(mean_grouped_rewards) // 2 :]
+
+
         # 更新当前的reward和std
         for ii in range(0, len(mean_grouped_rewards)):
             mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
             std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
 
         # 更新reward_stats
-        for ii in range(0, len(mean_grouped_rewards), len(self.reward_funcs)):
-            prompt_key = inputs[ii // len(self.reward_funcs) * self.num_generations]['problem']
+        for ii in range(0, len(mean_grouped_rewards)// 2):
+            prompt_key = inputs[ii * self.num_generations]['problem']
             prompt_key = get_prompt_hash(prompt_key)
-            self.reward_stats[prompt_key][0] = mean_grouped_rewards[ii : ii +  len(self.reward_funcs)]
-            self.reward_stats[prompt_key][1] = std_grouped_rewards[ii : ii +  len(self.reward_funcs)]
+            self.reward_stats[prompt_key][0] = (mean_grouped_rewards[ii] + mean_grouped_rewards[ii + len(mean_grouped_rewards) // 2]) / 2.0
+            self.reward_stats[prompt_key][1] = (std_grouped_rewards[ii] + std_grouped_rewards[ii + len(mean_grouped_rewards) // 2]) / 2.0
 
         del last_mean_grouped_rewards, last_std_grouped_rewards  # free memory
         # 结束 
-
+    
 
 
         # Normalize the rewards to compute the advantages
@@ -1505,14 +1486,6 @@ class ERGRPOTrainer(Trainer):
 
 
 
-
-        # last_std_grouped_rewards = last_std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
-
-        # correction = (last_std_grouped_rewards - std_grouped_rewards) / (last_std_grouped_rewards + 1e-4)
-        # advantages = advantages - correction
-
-        # advantages = advantages + std_grouped_rewards
-
         # Slice to keep only the local part of the data
         process_slice = slice(
             self.accelerator.process_index * len(prompts),
@@ -1523,9 +1496,13 @@ class ERGRPOTrainer(Trainer):
         advantages = advantages[process_slice]
 
 
+        
+        
         # 获得权重
         weights = torch.ones(len(advantages), device=device)  # default weights for PERsampler
+        
 
+        # 这段代码是对的，
         if self.use_per:
             # 更新PERsampler权重
             for ii in range(0, len(advantages)):
@@ -1534,6 +1511,20 @@ class ERGRPOTrainer(Trainer):
                 self.PERsampler.update_priorities_by_data(prompt_key, abs(advantages[ii].item()) + 1e-6)
 
                 weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
+
+            """
+            # 每个group 的num_generations个样本的权重是一样的
+            for ii in range(0, len(advantages), self.num_generations):
+                prompt_key = inputs[ii]['problem']
+                avg_priorited = 0
+                for jj in range(self.num_generations):
+                    avg_priorited += abs(advantages[ii + jj].item())
+                avg_priorited /= self.num_generations
+                self.PERsampler.update_priorities_by_data(prompt_key, avg_priorited + 1e-6)
+                for jj in range(self.num_generations):
+                    weights[ii + jj] = self.PERsampler.get_loss_weights(prompt_key)
+            """
+        
 
 
 
