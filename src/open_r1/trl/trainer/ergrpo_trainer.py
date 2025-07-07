@@ -1504,15 +1504,15 @@ class ERGRPOTrainer(Trainer):
 
         # 这段代码是对的，
         if self.use_per:
-            # 更新PERsampler权重
-            for ii in range(0, len(advantages)):
-                prompt_key = inputs[ii]['problem']
+            # # 更新PERsampler权重
+            # for ii in range(0, len(advantages)):
+            #     prompt_key = inputs[ii]['problem']
 
-                self.PERsampler.update_priorities_by_data(prompt_key, abs(advantages[ii].item()) + 1e-6)
+            #     self.PERsampler.update_priorities_by_data(prompt_key, abs(advantages[ii].item()) + 1e-6)
 
-                weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
+            #     weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
 
-            """
+            
             # 每个group 的num_generations个样本的权重是一样的
             for ii in range(0, len(advantages), self.num_generations):
                 prompt_key = inputs[ii]['problem']
@@ -1523,11 +1523,8 @@ class ERGRPOTrainer(Trainer):
                 self.PERsampler.update_priorities_by_data(prompt_key, avg_priorited + 1e-6)
                 for jj in range(self.num_generations):
                     weights[ii + jj] = self.PERsampler.get_loss_weights(prompt_key)
-            """
+            
         
-
-
-
 
         # Log the metrics
         if mode == "train":
