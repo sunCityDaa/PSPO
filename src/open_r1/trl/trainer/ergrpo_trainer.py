@@ -1441,6 +1441,10 @@ class ERGRPOTrainer(Trainer):
         is_std_zero = torch.isclose(std_grouped_rewards, torch.zeros_like(std_grouped_rewards))
 
         
+        temp_mean_grouped_rewards = mean_grouped_rewards.clone()
+        temp_std_grouped_rewards = std_grouped_rewards.clone()
+
+
         # 对于mini_repeat_count > 1的情况， prompt会被重复多次，下面是将一样的prompt看成不同的
         # 开始
         last_mean_grouped_rewards = torch.zeros_like(mean_grouped_rewards)
@@ -1464,7 +1468,7 @@ class ERGRPOTrainer(Trainer):
             mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
             std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
 
-        # 更新reward_stats
+        # 更新reward_statss
         for ii in range(0, len(mean_grouped_rewards)// 2):
             prompt_key = inputs[ii * self.num_generations]['problem']
             prompt_key = get_prompt_hash(prompt_key)
@@ -1481,8 +1485,14 @@ class ERGRPOTrainer(Trainer):
         std_grouped_rewards = std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
         advantages = rewards - mean_grouped_rewards
 
+        temp_mean_grouped_rewards = temp_mean_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
+        temp_std_grouped_rewards = temp_std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
+        temp_advantages = rewards - temp_mean_grouped_rewards
+
+
         if self.scale_rewards:
             advantages = advantages / (std_grouped_rewards + 1e-4)
+            temp_advantages = temp_advantages / (temp_std_grouped_rewards + 1e-4)
 
 
 
@@ -1494,21 +1504,22 @@ class ERGRPOTrainer(Trainer):
         all_process_advantages = advantages.clone()  # keep the aggregated advantages for logging
         
         advantages = advantages[process_slice]
-
+        temp_advantages = temp_advantages[process_slice]
 
         
         
         # 获得权重
-        weights = torch.ones(len(advantages), device=device)  # default weights for PERsampler
+        weights = torch.ones(len(temp_advantages), device=device)  # default weights for PERsampler
         
 
         # 这段代码是对的，
         if self.use_per:
+            # 这个效果更好
             # 更新PERsampler权重
-            for ii in range(0, len(advantages)):
+            for ii in range(0, len(temp_advantages)):
                 prompt_key = inputs[ii]['problem']
 
-                self.PERsampler.update_priorities_by_data(prompt_key, abs(advantages[ii].item()) + 1e-6)
+                self.PERsampler.update_priorities_by_data(prompt_key, abs(temp_advantages[ii].item()) + 1e-6)
 
                 weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
 

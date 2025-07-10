@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# # 设置进程 ID
-PID=4026452
+# # # 设置进程 ID
+PID=129792
 
 echo "等待进程 PID=$PID 结束..."
 
@@ -13,18 +13,41 @@ done
 echo "进程 $PID 已结束，开始执行后续命令..."
 # 执行后续命令
 
-git add .
-git commit -m "update"
-git push origin master
 
 
 
+# Qwen-math-1.5B dr.grpo
+ACCELERATE_LOG_LEVEL=info accelerate launch \
+--config_file src/open_r1/trl/accelerate_configs/zero2.yaml \
+--num_processes=2 \
+src/open_r1/grpo.py \
+--config recipes/dra_grpo.yaml
+
+
+# # Qwen-math-1.5B EMA 0.99
+
+ACCELERATE_LOG_LEVEL=info accelerate launch \
+--config_file src/open_r1/trl/accelerate_configs/zero2.yaml \
+--num_processes=2 \
+src/open_r1/ergrpo.py \
+--config recipes/EMA_alpha99.yaml
+
+
+
+# # Qwen-math-1.5B per
+
+ACCELERATE_LOG_LEVEL=info accelerate launch \
+--config_file src/open_r1/trl/accelerate_configs/zero2.yaml \
+--num_processes=2 \
+src/open_r1/ergrpo.py \
+--config recipes/per_other.yaml
+
+
+# # Qwen-math-1.5B per EMA
 ACCELERATE_LOG_LEVEL=info accelerate launch \
 --config_file src/open_r1/trl/accelerate_configs/zero2.yaml \
 --num_processes=2 \
 src/open_r1/ergrpo.py \
 --config recipes/dra_er_grpo.yaml
 
-
-
-sh eval.sh 6
+sh eval.sh 7
