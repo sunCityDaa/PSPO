@@ -668,7 +668,7 @@ class ERGRPOTrainer(Trainer):
         # 不同阶段reward的加权参数
         self.reward_alpha = args.reward_alpha 
         # 记录每个prompt的奖励统计信息
-        self.reward_stats = defaultdict(lambda: [None, None])
+        self.reward_stats = defaultdict(lambda: [None, None, None])
 
         # 是否使用per
         self.use_per = args.use_per
@@ -1456,17 +1456,28 @@ class ERGRPOTrainer(Trainer):
             if self.reward_stats.get(prompt_key):
                 last_mean_grouped_rewards[ii] = self.reward_stats[prompt_key][0]
                 last_std_grouped_rewards[ii] = self.reward_stats[prompt_key][1]
+                # add
+                temp_alpha = self.reward_stats[prompt_key][2]
             else:
                 last_mean_grouped_rewards[ii] = (mean_grouped_rewards[ii] + mean_grouped_rewards[ii + len(mean_grouped_rewards) // 2]) / 2.0
                 last_std_grouped_rewards[ii] = (std_grouped_rewards[ii] + std_grouped_rewards[ii + len(mean_grouped_rewards) // 2]) / 2.0
+
+                # add
+                temp_alpha = 1
+
 
         mean_grouped_rewards[len(mean_grouped_rewards) // 2 :] = mean_grouped_rewards[len(mean_grouped_rewards) // 2 :]
 
 
         # 更新当前的reward和std
         for ii in range(0, len(mean_grouped_rewards)):
-            mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
-            std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
+            # mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
+            # std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
+
+            # add
+            mean_grouped_rewards[ii] = 1.0/ temp_alpha * mean_grouped_rewards[ii] + (1 - 1.0/ temp_alpha) * last_mean_grouped_rewards[ii]
+            std_grouped_rewards[ii] = 1.0/ temp_alpha * std_grouped_rewards[ii] + (1 - 1.0/ temp_alpha) * last_std_grouped_rewards[ii]
+
 
         # 更新reward_statss
         for ii in range(0, len(mean_grouped_rewards)// 2):
@@ -1474,6 +1485,8 @@ class ERGRPOTrainer(Trainer):
             prompt_key = get_prompt_hash(prompt_key)
             self.reward_stats[prompt_key][0] = (mean_grouped_rewards[ii] + mean_grouped_rewards[ii + len(mean_grouped_rewards) // 2]) / 2.0
             self.reward_stats[prompt_key][1] = (std_grouped_rewards[ii] + std_grouped_rewards[ii + len(mean_grouped_rewards) // 2]) / 2.0
+            # add 
+            self.reward_stats[prompt_key][2] = temp_alpha + 1
 
         del last_mean_grouped_rewards, last_std_grouped_rewards  # free memory
         # 结束 

@@ -1,8 +1,8 @@
 # Model arguments
-model_name_or_path: /data/model/Qwen2.5-Math-7B
+model_name_or_path: /data/model/DeepSeek-R1-Distill-Qwen-1.5B
 model_revision: main
 torch_dtype: bfloat16
-# attn_implementation: flash_attention_2
+attn_implementation: flash_attention_2
 
 # Data training arguments
 dataset_name: knoveleng/open-rs
@@ -10,41 +10,38 @@ system_prompt: "A conversation between User and Assistant. The user asks a quest
 
 
 # lora配置
-use_peft: True
-lora_r: 32
-lora_alpha: 16
-lora_dropout: 0.05
-lora_target_modules:
-  - q_proj
-  - v_proj
-  # - k_proj
-  # - o_proj
-  # - gate_proj
-  # - up_proj
-  # - down_proj
-
-  
+# lora_r: 8
+# lora_alpha: 16
+# lora_dropout: 0.05
+# lora_target_modules:
+#   - q_proj
+#   - v_proj
+#   - k_proj
+#   - o_proj
+#   - gate_proj
+#   - up_proj
+#   - down_proj
 
 
-# load_in_8bit: true
+
+# load_in_4bit: true
 # bnb_4bit_quant_type: nf4
 
 
 # GRPO trainer config
 bf16: true
-
 use_vllm: true
 vllm_mode: colocate
 vllm_tensor_parallel_size: 2
-vllm_gpu_memory_utilization: 0.4
+vllm_gpu_memory_utilization: 0.1
 do_eval: false
 gradient_accumulation_steps: 6
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
-hub_model_id: Qwen-Math-7B-DrGRPO
+hub_model_id: ER-GRPO-evlove_alpha
 hub_strategy: every_save
-learning_rate: 2e-5  # 全量使用1e-6
+learning_rate: 1.0e-06
 log_completions: true
 log_level: info
 logging_first_step: true
@@ -56,12 +53,12 @@ lr_scheduler_kwargs:
 max_prompt_length: 512   # 512
 max_completion_length: 3584  # 3584
 max_steps: 50
-num_generations: 4 #6
+num_generations: 6 #6
 num_train_epochs: 1
-output_dir: Qwen-Math-7B-data/DrGRPO
+output_dir: data/ER-GRPO-evlove_alpha
 overwrite_output_dir: true
 per_device_eval_batch_size: 6 #6
-per_device_train_batch_size: 2  # 4
+per_device_train_batch_size: 4 #6
 push_to_hub: true
 report_to:
 - wandb
@@ -76,17 +73,18 @@ save_steps: 50
 seed: 2025
 temperature: 0.7
 warmup_ratio: 0.1
+SMI_reweighting: False
+extractor_name: hidden_state
+
+# 如果reward alpha是1.0就是原始的GRPO算法 ,reward_alpha: 0.1或者0.9
+reward_alpha: 0.99
+
+use_per: false  # 是否使用PER
 
 
 # 需要配置的GRPO参数，也即修改的默认配置
-
 beta: 0.04
 epsilon: 0.2
 epsilon_high: 0.28
 
-loss_type: "dr_grpo"   # "grpo" or "dr_grpo" or "bnpo"
-
-
-
-
-
+loss_type: "grpo"   # "grpo" or "dr_grpo" or "dnpo"
