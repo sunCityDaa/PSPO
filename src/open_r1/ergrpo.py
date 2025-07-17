@@ -47,6 +47,9 @@ import torch.nn.functional as F
 os.environ["WANDB_MODE"] = "offline"
 logger = logging.getLogger(__name__)
 
+torch.cuda.empty_cache()
+torch.cuda.reset_peak_memory_stats()
+
 
 @dataclass
 class GRPOScriptArguments(ScriptArguments):
