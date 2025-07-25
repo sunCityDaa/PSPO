@@ -916,6 +916,7 @@ def get_peft_config(model_args: ModelConfig) -> "Optional[PeftConfig]":
         bias="none",
         use_rslora=model_args.use_rslora,
         modules_to_save=model_args.lora_modules_to_save,
+        inference_mode=False,  
     )
 
     return peft_config

@@ -1,6 +1,9 @@
 #!/bin/sh
 # Base model configuration
-#  如果用两个卡 需要export VLLM_WORKER_MULTIPROC_METHOD=spawn
+#  如果用两个卡 需要
+
+# export VLLM_WORKER_MULTIPROC_METHOD=spawn 
+# export VLLM_ATTENTION_BACKEND=XFORMERS 
 
 
 # 从huggingface上下模型的配置
@@ -110,7 +113,8 @@ get_revision() {
     
     elif [ "$exp" = "5" ]; then
         case $step in
-            50)  echo "/data/ER-GRPO/data/ER-GRPO-TD/checkpoint-50" ;;
+            50)  echo "/data/ER-GRPO/data/ER-GRPO-alpha99-newSTD/checkpoint-50" ;;
+            # 100)  echo "/data/model/Qwen2.5-Math-7B-Instruct" ;;
             # 50)  echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-50" ;;
             # 100) echo "/data/ER-GRPO/data/ER-GRPO-alpha30/checkpoint-50" ;;
             # 150) echo "/data/ER-GRPO/data/ER-GRPO-alpha50/checkpoint-50" ;;
@@ -141,18 +145,16 @@ get_revision() {
      # ERGRPO  reward alpha = 0.1
     elif [ "$exp" = "7" ]; then
         case $step in
-            50)  echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/ER-GRPO-alpha99/checkpoint-50" ;;
-            100) echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/DrGRPO/checkpoint-50" ;;
-            150) echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/ERPER-GRPO-alpha99/checkpoint-50" ;;
-            200) echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/PER-GRPO/checkpoint-50" ;;
-            250) echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/GRPO/checkpoint-50" ;;
-
-            # 250) echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-250" ;;
-            # 300) echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-300" ;;
-            # 350) echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-350" ;;
-            # 400) echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-400" ;;
-            # 450) echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-450" ;;
-            # 500) echo "/data/ER-GRPO/data/ER-GRPO-alpha10/checkpoint-500" ;;
+            # 50)  echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/Merged/ER-GRPO-alpha99" ;;
+            # 100) echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/Merged/DrGRPO" ;;
+            # 150) echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/Merged/ERPER-GRPO-alpha99" ;;
+            # 200) echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/Merged/PER-GRPO" ;;
+            250) echo "/data/ER-GRPO/Qwen2.5-Math-7B-data/Merged/GRPO" ;;  
+            300) echo "/data/ER-GRPO/Qwen2.5-Math-7B-Instruct-data/Merged/ER-GRPO-alpha99" ;;
+            # 350) echo "/data/ER-GRPO/Qwen2.5-Math-7B-Instruct-data/Merged/DrGRPO" ;;
+            # 400) echo "/data/ER-GRPO/Qwen2.5-Math-7B-Instruct-data/Merged/ERPER-GRPO-alpha99" ;;
+            450) echo "/data/ER-GRPO/Qwen2.5-Math-7B-Instruct-data/Merged/PER-GRPO" ;;
+            500) echo "/data/ER-GRPO/Qwen2.5-Math-7B-Instruct-data/Merged/GRPO" ;;
             *) echo "unknown" ;;
         esac
     # ERGRPO  
@@ -204,7 +206,7 @@ get_steps() {
         5) echo "50" ;;
         6) echo "50 100 150 200 250 300 350 400 450 500" ;;
         # 7) echo "50 100 150 200 250 300 350 400 450 500" ;;
-        7) echo "50 100 150 200 250" ;;
+        7) echo "250 300 450 500" ;;
         8) echo "50 100 150 200 250 300 350 400 450 500" ;;
         9) echo "50 100 150 200 250 300 350 400 450 500" ;;
         *) echo "" ;;
@@ -216,7 +218,7 @@ run_evaluation() {
     experiment=$1
     step=$2
     revision=$(get_revision "$experiment" "$step")
-    output_dir="logs/evals/Exp${experiment}_${step}"
+    output_dir="logs/evals-newSTD/Exp${experiment}_${step}"
     
     # Check if revision is valid
     if [ "$revision" = "unknown" ]; then

@@ -585,6 +585,7 @@ class ERGRPOTrainer(Trainer):
             if not is_peft_available():
                 raise ImportError("PEFT is required to use `peft_config`. Run `pip install peft`.")
             model = get_peft_model(model, peft_config)
+           
 
         # Enable gradient checkpointing if requested
         if args.gradient_checkpointing:
@@ -812,6 +813,13 @@ class ERGRPOTrainer(Trainer):
                         ]
                     )
 
+                     # vLLM requires the environment variables to be set for distributed training.
+                os.environ["RANK"] = str(self.accelerator.process_index)
+                os.environ["LOCAL_RANK"] = str(self.accelerator.local_process_index)
+                os.environ["WORLD_SIZE"] = str(self.accelerator.num_processes)
+                os.environ["MASTER_ADDR"] = os.environ.get("MASTER_ADDR", "localhost")
+                os.environ["MASTER_PORT"] = os.environ.get("MASTER_PORT", "12345")
+
                 self.llm = LLM(
                     model=model.name_or_path,
                     tensor_parallel_size=args.vllm_tensor_parallel_size,
@@ -823,6 +831,7 @@ class ERGRPOTrainer(Trainer):
                     distributed_executor_backend="external_launcher",
                     # Feed identical seed for tp groups to ensure sampling results are the same across workers
                     seed=self.accelerator.process_index // self.vllm_tensor_parallel_size,
+                    max_num_batched_tokens=4096,
                 )
 
             # vLLM specific sampling arguments
@@ -1472,8 +1481,15 @@ class ERGRPOTrainer(Trainer):
         # 更新当前的reward和std
         for ii in range(0, len(mean_grouped_rewards)):
             mean_grouped_rewards[ii] = self.reward_alpha * mean_grouped_rewards[ii] + (1 - self.reward_alpha) * last_mean_grouped_rewards[ii]
-            std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
+            # std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] + (1 - self.reward_alpha) * last_std_grouped_rewards[ii]
 
+            # 新的更新公式
+            std_grouped_rewards[ii] = self.reward_alpha * std_grouped_rewards[ii] *  std_grouped_rewards[ii] \
+                + (1 - self.reward_alpha) * last_std_grouped_rewards[ii] * last_std_grouped_rewards[ii] \
+                + self.reward_alpha * (1 - self.reward_alpha) * (mean_grouped_rewards[ii] - last_mean_grouped_rewards[ii]) * (mean_grouped_rewards[ii] - last_mean_grouped_rewards[ii])
+
+            std_grouped_rewards[ii] = torch.sqrt(std_grouped_rewards[ii])
+            
             # add
             # mean_grouped_rewards[ii] = 1.0/ temp_alpha * mean_grouped_rewards[ii] + (1 - 1.0/ temp_alpha) * last_mean_grouped_rewards[ii]
             # std_grouped_rewards[ii] = 1.0/ temp_alpha * std_grouped_rewards[ii] + (1 - 1.0/ temp_alpha) * last_std_grouped_rewards[ii]
@@ -1531,12 +1547,12 @@ class ERGRPOTrainer(Trainer):
             # 这个效果更好
             # 更新PERsampler权重
 
-            # for ii in range(0, len(temp_advantages)):
-            #     prompt_key = inputs[ii]['problem']
+            for ii in range(0, len(temp_advantages)):
+                prompt_key = inputs[ii]['problem']
 
-            #     self.PERsampler.update_priorities_by_data(prompt_key, abs(temp_advantages[ii].item()) + 1e-6)
+                self.PERsampler.update_priorities_by_data(prompt_key, abs(temp_advantages[ii].item()) + 1e-6)
 
-            #     weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
+                weights[ii] = self.PERsampler.get_loss_weights(prompt_key)
 
 
             
@@ -1551,16 +1567,17 @@ class ERGRPOTrainer(Trainer):
             #     self.PERsampler.update_priorities_by_data(prompt_key, avg_priorited + 1e-6)
             #     for jj in range(self.num_generations):
             #         weights[ii + jj] = self.PERsampler.get_loss_weights(prompt_key)
+            
             # 每个group 的num_generations个样本的权重是一样的
-            for ii in range(0, len(temp_advantages), self.num_generations):
-                prompt_key = inputs[ii]['problem']
-                avg_priorited = 0
-                for jj in range(self.num_generations):
-                    avg_priorited = max(abs(temp_advantages[ii + jj].item()), avg_priorited)
+            # for ii in range(0, len(temp_advantages), self.num_generations):
+            #     prompt_key = inputs[ii]['problem']
+            #     avg_priorited = 0
+            #     for jj in range(self.num_generations):
+            #         avg_priorited = max(abs(temp_advantages[ii + jj].item()), avg_priorited)
 
-                self.PERsampler.update_priorities_by_data(prompt_key, avg_priorited + 1e-6)
-                for jj in range(self.num_generations):
-                    weights[ii + jj] = self.PERsampler.get_loss_weights(prompt_key)
+            #     self.PERsampler.update_priorities_by_data(prompt_key, avg_priorited + 1e-6)
+            #     for jj in range(self.num_generations):
+            #         weights[ii + jj] = self.PERsampler.get_loss_weights(prompt_key)
             
         del temp_advantages
 

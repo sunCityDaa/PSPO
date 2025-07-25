@@ -432,6 +432,8 @@ class GRPOTrainer(Trainer):
             if not is_peft_available():
                 raise ImportError("PEFT is required to use `peft_config`. Run `pip install peft`.")
             model = get_peft_model(model, peft_config)
+            print("*" * 100)
+            model.print_trainable_parameters()
 
         # Enable gradient checkpointing if requested
         if args.gradient_checkpointing:
@@ -653,6 +655,13 @@ class GRPOTrainer(Trainer):
                             for i in range(self.accelerator.num_processes // self.vllm_tensor_parallel_size)
                         ]
                     )
+                
+                # vLLM requires the environment variables to be set for distributed training.
+                os.environ["RANK"] = str(self.accelerator.process_index)
+                os.environ["LOCAL_RANK"] = str(self.accelerator.local_process_index)
+                os.environ["WORLD_SIZE"] = str(self.accelerator.num_processes)
+                os.environ["MASTER_ADDR"] = os.environ.get("MASTER_ADDR", "localhost")
+                os.environ["MASTER_PORT"] = os.environ.get("MASTER_PORT", "12345")
 
                 self.llm = LLM(
                     model=model.name_or_path,
@@ -665,6 +674,7 @@ class GRPOTrainer(Trainer):
                     distributed_executor_backend="external_launcher",
                     # Feed identical seed for tp groups to ensure sampling results are the same across workers
                     seed=self.accelerator.process_index // self.vllm_tensor_parallel_size,
+                    max_num_batched_tokens=4096,
                 )
 
             # vLLM specific sampling arguments

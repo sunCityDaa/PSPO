@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Accelerate Launch (GRPO)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "accelerate.commands.launch",
+            "console": "integratedTerminal",
+            "env": {
+                "ACCELERATE_LOG_LEVEL": "info"
+            },
+            "args": [
+                "--config_file", "src/open_r1/trl/accelerate_configs/zero2.yaml",
+                "--num_processes=2",
+                "src/open_r1/grpo.py",
+                "--config", "recipes/7B/dra_grpo.yaml"
+            ],
+            "justMyCode": false,
+            "cwd": "/data/ER-GRPO/",
+            "python": "/opt/conda/envs/openr1/bin/python",
+        }
+    ]
+}

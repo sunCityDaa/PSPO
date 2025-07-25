@@ -11,27 +11,19 @@ system_prompt: "A conversation between User and Assistant. The user asks a quest
 
 # lora配置
 use_peft: True
-lora_r: 16
-lora_alpha: 16
+lora_r: 32
+lora_alpha: 64
 lora_dropout: 0.05
-lora_target_modules: ['q_proj', 'v_proj']
-# [
-#     "q_proj", "k_proj", "v_proj", "o_proj",  # Attention
-#     "gate_proj", "up_proj", "down_proj"     # MLP
-# ]
-    # - q_proj
-    # - v_proj
-  # - k_proj
-  # - o_proj
-  # - gate_proj
-  # - up_proj
-  # - down_proj
+lora_target_modules: # ['q_proj', 'v_proj']
+  - q_proj
+  - v_proj
+  - k_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
 
   
-
-
-load_in_8bit: true
-bnb_4bit_quant_type: nf4
 
 
 # GRPO trainer config
@@ -39,8 +31,8 @@ bf16: true
 
 use_vllm: true
 vllm_mode: colocate
-vllm_tensor_parallel_size: 2
-vllm_gpu_memory_utilization: 0.25
+vllm_tensor_parallel_size: 1
+vllm_gpu_memory_utilization: 0.4
 do_eval: false
 gradient_accumulation_steps: 6
 gradient_checkpointing: true
@@ -48,7 +40,7 @@ gradient_checkpointing_kwargs:
   use_reentrant: false
 hub_model_id: Qwen-Math-7B-GRPO
 hub_strategy: every_save
-learning_rate: 3.0e-05 # 全量使用1e-6
+learning_rate: 5.0e-06 # 全量使用1e-6
 log_completions: true
 log_level: info
 logging_first_step: true
@@ -58,14 +50,14 @@ lr_scheduler_type: cosine_with_min_lr
 lr_scheduler_kwargs:
   min_lr_rate: 0.1
 max_prompt_length: 512   # 512
-max_completion_length: 3072  # 3584
-max_steps: 50
-num_generations: 2 #6
+max_completion_length: 1024    # 3584
+max_steps: 100
+num_generations: 6 #6
 num_train_epochs: 1
 output_dir: Qwen2.5-Math-7B-data/GRPO
 overwrite_output_dir: true
 per_device_eval_batch_size: 6 #6
-per_device_train_batch_size: 1  # 4
+per_device_train_batch_size: 1 # 4
 push_to_hub: true
 report_to:
 - wandb

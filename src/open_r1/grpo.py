@@ -51,6 +51,14 @@ os.environ["WANDB_MODE"] = "offline"
 logger = logging.getLogger(__name__)
 
 
+import torch.distributed as dist
+from datetime import timedelta
+
+dist.init_process_group(backend='nccl', init_method='env://', timeout=timedelta(hours=2))
+torch.cuda.empty_cache()
+torch.cuda.reset_peak_memory_stats()
+
+
 @dataclass
 class GRPOScriptArguments(ScriptArguments):
     """
