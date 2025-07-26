@@ -1,0 +1,114 @@
+{
+  "config_general": {
+    "lighteval_sha": "?",
+    "num_fewshot_seeds": 1,
+    "max_samples": null,
+    "job_id": 0,
+    "start_time": 21193445.34319856,
+    "end_time": 21193621.359840177,
+    "total_evaluation_time_secondes": "176.0166416168213",
+    "model_name": "_data_ER-GRPO_Qwen-Math-1.5B-data_ERPER-GRPO-alpha99-newSTD_checkpoint-50",
+    "model_sha": "",
+    "model_dtype": null,
+    "model_size": null,
+    "generation_parameters": {
+      "early_stopping": null,
+      "repetition_penalty": null,
+      "frequency_penalty": null,
+      "length_penalty": null,
+      "presence_penalty": null,
+      "max_new_tokens": 3096,
+      "min_new_tokens": null,
+      "seed": null,
+      "stop_tokens": null,
+      "temperature": 0.6,
+      "top_k": null,
+      "min_p": null,
+      "top_p": 0.95,
+      "truncate_prompt": null,
+      "response_format": null
+    }
+  },
+  "results": {
+    "custom|minerva|0": {
+      "extractive_match": 0.1323529411764706,
+      "extractive_match_stderr": 0.02058513418922066
+    },
+    "all": {
+      "extractive_match": 0.1323529411764706,
+      "extractive_match_stderr": 0.02058513418922066
+    }
+  },
+  "versions": {
+    "custom|minerva|0": 1
+  },
+  "config_tasks": {
+    "custom|minerva": {
+      "name": "minerva",
+      "prompt_function": "minerva_prompt_fn",
+      "hf_repo": "knoveleng/Minerva-Math",
+      "hf_subset": "default",
+      "metric": [
+        {
+          "metric_name": "extractive_match",
+          "higher_is_better": true,
+          "category": "3",
+          "use_case": "1",
+          "sample_level_fn": "sample_level_fn",
+          "corpus_level_fn": "mean"
+        }
+      ],
+      "hf_revision": null,
+      "hf_filter": null,
+      "hf_avail_splits": [
+        "train"
+      ],
+      "trust_dataset": false,
+      "evaluation_splits": [
+        "train"
+      ],
+      "few_shots_split": null,
+      "few_shots_select": null,
+      "generation_size": 32768,
+      "generation_grammar": null,
+      "stop_sequence": [],
+      "num_samples": null,
+      "suite": [
+        "custom"
+      ],
+      "original_num_docs": 272,
+      "effective_num_docs": 272,
+      "must_remove_duplicate_docs": false,
+      "version": 1
+    }
+  },
+  "summary_tasks": {
+    "custom|minerva|0": {
+      "hashes": {
+        "hash_examples": "2380609739db80f4",
+        "hash_full_prompts": "bb6ef4ab69d4a992",
+        "hash_input_tokens": "8ae9b16033436de4",
+        "hash_cont_tokens": "64631ab5b1ed630c"
+      },
+      "truncated": 0,
+      "non_truncated": 272,
+      "padded": 0,
+      "non_padded": 272,
+      "effective_few_shots": 0.0,
+      "num_truncated_few_shots": 0
+    }
+  },
+  "summary_general": {
+    "hashes": {
+      "hash_examples": "e5dd65bbb857baae",
+      "hash_full_prompts": "21d3c66412cb73c0",
+      "hash_input_tokens": "730cf164a53f4e98",
+      "hash_cont_tokens": "b89b3adcad216736"
+    },
+    "truncated": 0,
+    "non_truncated": 272,
+    "padded": 0,
+    "non_padded": 272,
+    "num_truncated_few_shots": 0
+  }
+}

@@ -32,8 +32,8 @@ system_prompt: "A conversation between User and Assistant. The user asks a quest
 bf16: true
 use_vllm: true
 vllm_mode: colocate
-vllm_tensor_parallel_size: 1
-vllm_gpu_memory_utilization: 0.2
+vllm_tensor_parallel_size: 2
+vllm_gpu_memory_utilization: 0.1
 do_eval: false
 gradient_accumulation_steps: 6
 gradient_checkpointing: true
