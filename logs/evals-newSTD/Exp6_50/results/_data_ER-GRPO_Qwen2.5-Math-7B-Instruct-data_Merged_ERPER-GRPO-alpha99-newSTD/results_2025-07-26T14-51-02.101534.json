@@ -1,0 +1,114 @@
+{
+  "config_general": {
+    "lighteval_sha": "?",
+    "num_fewshot_seeds": 1,
+    "max_samples": null,
+    "job_id": 0,
+    "start_time": 21205777.17517402,
+    "end_time": 21205904.14843096,
+    "total_evaluation_time_secondes": "126.97325693815947",
+    "model_name": "_data_ER-GRPO_Qwen2.5-Math-7B-Instruct-data_Merged_ERPER-GRPO-alpha99-newSTD",
+    "model_sha": "",
+    "model_dtype": null,
+    "model_size": null,
+    "generation_parameters": {
+      "early_stopping": null,
+      "repetition_penalty": null,
+      "frequency_penalty": null,
+      "length_penalty": null,
+      "presence_penalty": null,
+      "max_new_tokens": 3096,
+      "min_new_tokens": null,
+      "seed": null,
+      "stop_tokens": null,
+      "temperature": 0.6,
+      "top_k": null,
+      "min_p": null,
+      "top_p": 0.95,
+      "truncate_prompt": null,
+      "response_format": null
+    }
+  },
+  "results": {
+    "custom|amc23|0": {
+      "extractive_match": 0.55,
+      "extractive_match_stderr": 0.07966275068156914
+    },
+    "all": {
+      "extractive_match": 0.55,
+      "extractive_match_stderr": 0.07966275068156914
+    }
+  },
+  "versions": {
+    "custom|amc23|0": 1
+  },
+  "config_tasks": {
+    "custom|amc23": {
+      "name": "amc23",
+      "prompt_function": "amc_prompt_fn",
+      "hf_repo": "knoveleng/AMC-23",
+      "hf_subset": "default",
+      "metric": [
+        {
+          "metric_name": "extractive_match",
+          "higher_is_better": true,
+          "category": "3",
+          "use_case": "1",
+          "sample_level_fn": "sample_level_fn",
+          "corpus_level_fn": "mean"
+        }
+      ],
+      "hf_revision": null,
+      "hf_filter": null,
+      "hf_avail_splits": [
+        "train"
+      ],
+      "trust_dataset": false,
+      "evaluation_splits": [
+        "train"
+      ],
+      "few_shots_split": null,
+      "few_shots_select": null,
+      "generation_size": 32768,
+      "generation_grammar": null,
+      "stop_sequence": [],
+      "num_samples": null,
+      "suite": [
+        "custom"
+      ],
+      "original_num_docs": 40,
+      "effective_num_docs": 40,
+      "must_remove_duplicate_docs": false,
+      "version": 1
+    }
+  },
+  "summary_tasks": {
+    "custom|amc23|0": {
+      "hashes": {
+        "hash_examples": "57f3ead69f601b6a",
+        "hash_full_prompts": "390de5cece290886",
+        "hash_input_tokens": "5b0eb4b6a4f4fd9b",
+        "hash_cont_tokens": "48758a258c4491e5"
+      },
+      "truncated": 0,
+      "non_truncated": 40,
+      "padded": 0,
+      "non_padded": 40,
+      "effective_few_shots": 0.0,
+      "num_truncated_few_shots": 0
+    }
+  },
+  "summary_general": {
+    "hashes": {
+      "hash_examples": "fe1f1f4512256bec",
+      "hash_full_prompts": "72d2fa0b6dfde445",
+      "hash_input_tokens": "714142a217fe46b1",
+      "hash_cont_tokens": "7cd782116175721f"
+    },
+    "truncated": 0,
+    "non_truncated": 40,
+    "padded": 0,
+    "non_padded": 40,
+    "num_truncated_few_shots": 0
+  }
+}

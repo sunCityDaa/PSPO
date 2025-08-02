@@ -813,7 +813,7 @@ class ERGRPOTrainer(Trainer):
                         ]
                     )
 
-                     # vLLM requires the environment variables to be set for distributed training.
+                # vLLM requires the environment variables to be set for distributed training.
                 os.environ["RANK"] = str(self.accelerator.process_index)
                 os.environ["LOCAL_RANK"] = str(self.accelerator.local_process_index)
                 os.environ["WORLD_SIZE"] = str(self.accelerator.num_processes)
@@ -1247,6 +1247,7 @@ class ERGRPOTrainer(Trainer):
 
             # Generate completions using colocated vLLM instances: each device holds vLLM copy and work on their own batch of prompts
             elif self.vllm_mode == "colocate":
+                # self.llm.reset_prefix_cache() 
                 if self.guided_decoding_regex:
                     guided_decoding = GuidedDecodingParams(backend="outlines", regex=self.guided_decoding_regex)
                 else:
@@ -1760,11 +1761,11 @@ class ERGRPOTrainer(Trainer):
 
         # Log the metrics
         mode = "train" if self.model.training else "eval"
-        self._metrics[mode]["policy_entropy_avg"].append(self.accelerator.gather(entropy.mean()).nanmean().item())
+        # self._metrics[mode]["policy_entropy_avg"].append(self.accelerator.gather(entropy.mean()).nanmean().item())
 
         if self.beta != 0.0:
             mean_kl = (per_token_kl * completion_mask).sum() / completion_mask.sum()
-            self._metrics[mode]["kl"].append(self.accelerator.gather(mean_kl).nanmean().item())
+            # self._metrics[mode]["kl"].append(self.accelerator.gather(mean_kl).nanmean().item())
 
         # Compute the clipped probability ratios
         is_low_clipped = (coef_1 < 1 - self.epsilon_low) & (advantages.unsqueeze(1) < 0)
@@ -1775,14 +1776,14 @@ class ERGRPOTrainer(Trainer):
         high_clip = (is_high_clipped * completion_mask).sum() / completion_mask.sum()
         clip_ratio = (is_region_clipped * completion_mask).sum() / completion_mask.sum()
 
-        gathered_low_clip = self.accelerator.gather(low_clip)
-        self._metrics[mode]["clip_ratio/low_mean"].append(gathered_low_clip.nanmean().item())
-        self._metrics[mode]["clip_ratio/low_min"].append(nanmin(gathered_low_clip).item())
-        gathered_high_clip = self.accelerator.gather(high_clip)
-        self._metrics[mode]["clip_ratio/high_mean"].append(gathered_high_clip.nanmean().item())
-        self._metrics[mode]["clip_ratio/high_max"].append(nanmax(gathered_high_clip).item())
-        gathered_clip_ratio = self.accelerator.gather(clip_ratio)
-        self._metrics[mode]["clip_ratio/region_mean"].append(gathered_clip_ratio.nanmean().item())
+        # gathered_low_clip = self.accelerator.gather(low_clip)
+        # self._metrics[mode]["clip_ratio/low_mean"].append(gathered_low_clip.nanmean().item())
+        # self._metrics[mode]["clip_ratio/low_min"].append(nanmin(gathered_low_clip).item())
+        # gathered_high_clip = self.accelerator.gather(high_clip)
+        # self._metrics[mode]["clip_ratio/high_mean"].append(gathered_high_clip.nanmean().item())
+        # self._metrics[mode]["clip_ratio/high_max"].append(nanmax(gathered_high_clip).item())
+        # gathered_clip_ratio = self.accelerator.gather(clip_ratio)
+        # self._metrics[mode]["clip_ratio/region_mean"].append(gathered_clip_ratio.nanmean().item())
         return loss
 
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys: Optional[list[str]] = None):

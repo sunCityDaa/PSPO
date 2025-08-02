@@ -80,6 +80,7 @@ epsilon: 0.2
 epsilon_high: 0.28
 
 loss_type: "dr_grpo"   # "grpo" or "dr_grpo" or "bnpo"
+scale_rewards: False
 
 
 

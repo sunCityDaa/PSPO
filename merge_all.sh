@@ -4,12 +4,13 @@
 export CUDA_VISIBLE_DEVICES=""  # 用CPU合并，或者指定卡，如 "0"
 
 # 路径配置
-BASE_MODEL="/data/model/Qwen2.5-Math-7B-Instruct"
-LORA_BASE="/data/ER-GRPO/Qwen2.5-Math-7B-Instruct-data"
-MERGED_BASE="/data/ER-GRPO/Qwen2.5-Math-7B-Instruct-data/Merged"
+BASE_MODEL="/data/model/Qwen2.5-Math-7B"
+LORA_BASE="/data/ER-GRPO/Qwen2.5-Math-7B-data-DrGRPO"
+MERGED_BASE="/data/ER-GRPO/Qwen2.5-Math-7B-data-DrGRPO/Merged"
 
 # LoRA 子目录数组（只需修改这一行，填你要 merge 的 LoRA 子文件夹名）
-LORA_NAMES=("GRPO" "DrGRPO" "ER-GRPO-alpha99" "PER-GRPO" "ERPER-GRPO-alpha99")
+# LORA_NAMES=("GRPO" "DrGRPO" "ER-GRPO-alpha99" "PER-GRPO" "ERPER-GRPO-alpha99")
+LORA_NAMES=("ER-GRPO-alpha99-newSTD" "PER-GRPO" "ERPER-GRPO-alpha99-newSTD")
 
 # 遍历合并
 for LORA_NAME in "${LORA_NAMES[@]}"

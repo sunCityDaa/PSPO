@@ -76,3 +76,28 @@ Our code is built based on [Open-rs](https://github.com/knoveleng/open-rs). Than
 export NCCL_DEBUG=INFO
 export NCCL_IB_DISABLE=1       # 避免 RDMA 死锁问题
 export NCCL_P2P_DISABLE=1      # 降低
+export NCCL_DEBUG_SUBSYS=INIT,P2P
+export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:64  # 如果是deepseek的话用这
+
+
+dr_grpo-false 以及/data/ER-GRPO/logs/evals-drgrpo-false,这个不是真正的DrGRPO，advantage的计算和GRPO一样，而loss是dr_grpo
+
+drgrpo也不是真正的drgrpo，因为最后的kl散度还在，且之前所有的STD的实验都错了，使用了标准差，按理来说应该是方差
+
+
+所以需要重新跑一次实验
+
+
+
+<!-- export NCCL_BLOCKING_WAIT=1 -->
+
+<!-- export TORCH_NCCL_BLOCKING_WAIT=1 -->
+export TORCH_NCCL_HEARTBEAT_TIMEOUT_SEC=900
+export TORCH_NCCL_ENABLE_MONITORING=0
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
+export NCCL_DEBUG=INFO
+export NCCL_ASYNC_ERROR_HANDLING=1
+
+
+export NCCL_SOCKET_TIMEOUT=5
+export CUDA_LAUNCH_BLOCKING=1

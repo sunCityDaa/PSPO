@@ -49,7 +49,7 @@ max_completion_length: 1024  # 3584
 max_steps: 100
 num_generations: 6 #6
 num_train_epochs: 1
-output_dir: Qwen2.5-Math-7B-Instruct-data/PER-GRPO
+output_dir: Qwen2.5-Math-7B-Instruct-data-DrGRPO/PER-GRPO
 overwrite_output_dir: true
 per_device_eval_batch_size: 6 #6
 per_device_train_batch_size: 1 #4
@@ -81,4 +81,5 @@ beta: 0.04
 epsilon: 0.2
 epsilon_high: 0.28
 
-loss_type: "grpo"   # "grpo" or "dr_grpo" or "dnpo"
+loss_type: "dr_grpo"   # "grpo" or "dr_grpo" or "dnpo"
+scale_rewards: False   # "grpo" or "dr_grpo" or "dnpo"
