@@ -16,6 +16,7 @@
 /Qwen2.5-Math-7B-Instruct-data-DrGRPO/*
 /Qwen2.5-Math-7B-Instruct-data-DrGRPO-false/*
 /wandb/*
+/new_model/*
 
 # ./src/open_r1/_pycache_/*
 # ./src/open_r1/trl/_pycache_/*

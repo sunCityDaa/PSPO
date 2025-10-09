@@ -32,14 +32,14 @@ system_prompt: "A conversation between User and Assistant. The user asks a quest
 bf16: true
 use_vllm: true
 vllm_mode: colocate
-vllm_tensor_parallel_size: 2
-vllm_gpu_memory_utilization: 0.1
+vllm_tensor_parallel_size: 1
+vllm_gpu_memory_utilization: 0.15
 do_eval: false
 gradient_accumulation_steps: 6
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
-hub_model_id: ER-GRPO-alpha99-newSTD
+hub_model_id: r1_ER_GRPO
 hub_strategy: every_save
 learning_rate: 1.0e-06
 log_completions: true
@@ -55,7 +55,7 @@ max_completion_length: 3584  # 3584
 max_steps: 50
 num_generations: 6 #6
 num_train_epochs: 1
-output_dir: data_drpo/ER-GRPO-alpha99-newSTD
+output_dir: new_model/r1_1.5B/ER_GRPO
 overwrite_output_dir: true
 per_device_eval_batch_size: 6 #6
 per_device_train_batch_size: 4 #6
@@ -79,7 +79,7 @@ extractor_name: hidden_state
 # 如果reward alpha是1.0就是原始的GRPO算法 ,reward_alpha: 0.1或者0.9
 reward_alpha: 0.99
 
-use_per: false  # 是否使用PER
+use_per: False  # 是否使用PER
 
 
 # 需要配置的GRPO参数，也即修改的默认配置
@@ -87,5 +87,8 @@ beta: 0.04
 epsilon: 0.2
 epsilon_high: 0.28
 
-loss_type: "dr_grpo"   # "grpo" or "dr_grpo" or "dnpo"
-scale_rewards: False
+# loss_type: "dr_grpo"   # "grpo" or "dr_grpo" or "dnpo"
+# scale_rewards: False
+
+loss_type: "grpo"   # "grpo" or "dr_grpo" or "dnpo"
+scale_rewards: True

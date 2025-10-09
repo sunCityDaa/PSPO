@@ -1489,7 +1489,7 @@ class ERGRPOTrainer(Trainer):
                 + (1 - self.reward_alpha) * last_std_grouped_rewards[ii] * last_std_grouped_rewards[ii] \
                 + self.reward_alpha * (1 - self.reward_alpha) * (mean_grouped_rewards[ii] - last_mean_grouped_rewards[ii]) * (mean_grouped_rewards[ii] - last_mean_grouped_rewards[ii])
 
-            # std_grouped_rewards[ii] = torch.sqrt(std_grouped_rewards[ii])
+       
             
             # add
             # mean_grouped_rewards[ii] = 1.0/ temp_alpha * mean_grouped_rewards[ii] + (1 - 1.0/ temp_alpha) * last_mean_grouped_rewards[ii]
@@ -1581,6 +1581,8 @@ class ERGRPOTrainer(Trainer):
             #         weights[ii + jj] = self.PERsampler.get_loss_weights(prompt_key)
             
         del temp_advantages
+        torch.cuda.empty_cache()
+
 
         # Log the metrics
         if mode == "train":

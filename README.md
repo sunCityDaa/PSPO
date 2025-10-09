@@ -95,9 +95,10 @@ base eval.sh
 Our code is built based on [Open-rs](https://github.com/knoveleng/open-rs). Thanks!
 
 
-
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 ## Bug
 ```
+
 export NCCL_DEBUG=INFO
 export NCCL_IB_DISABLE=1       # 避免 RDMA 死锁问题
 export NCCL_P2P_DISABLE=1      # 降低
